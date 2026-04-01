@@ -6,7 +6,10 @@
  * and updates the database with last_run_at / next_run_at.
  */
 
+import { createLogger } from '@accomplish_ai/agent-core';
 import type { StorageAPI, ScheduledTask } from '@accomplish_ai/agent-core';
+
+const logger = createLogger('Scheduler');
 
 // =============================================================================
 // Cron Parsing & Matching
@@ -255,15 +258,15 @@ export class SchedulerService {
     for (const task of due) {
       const next = computeNextRunAt(task.cron, now);
       if (!next) {
-        console.warn(`[Scheduler] Could not compute next run for schedule ${task.id} — skipping`);
+        logger.warn(`Could not compute next run for schedule ${task.id} — skipping`);
         continue;
       }
       this.storage.updateScheduledTaskLastRun(task.id, nowIso, next);
-      console.log(`[Scheduler] Firing schedule ${task.id}: "${task.prompt.slice(0, 80)}"`);
+      logger.info(`Firing schedule ${task.id}: "${task.prompt.slice(0, 80)}"`);
       try {
         this.onTaskFire(task.prompt, task.workspaceId);
       } catch (err) {
-        console.error(`[Scheduler] Error firing task ${task.id}:`, err);
+        logger.error(`Error firing task ${task.id}:`, err);
       }
     }
   }
@@ -282,17 +285,15 @@ export class SchedulerService {
     for (const task of overdue) {
       const next = computeNextRunAt(task.cron, now);
       if (!next) {
-        console.warn(
-          `[Scheduler] Could not compute next run for overdue schedule ${task.id} — skipping`,
-        );
+        logger.warn(`Could not compute next run for overdue schedule ${task.id} — skipping`);
         continue;
       }
       this.storage.updateScheduledTaskLastRun(task.id, nowIso, next);
-      console.log(`[Scheduler] Catch-up firing schedule ${task.id}: "${task.prompt.slice(0, 80)}"`);
+      logger.info(`Catch-up firing schedule ${task.id}: "${task.prompt.slice(0, 80)}"`);
       try {
         this.onTaskFire(task.prompt, task.workspaceId);
       } catch (err) {
-        console.error(`[Scheduler] Error during catch-up for task ${task.id}:`, err);
+        logger.error(`Error during catch-up for task ${task.id}:`, err);
       }
     }
   }

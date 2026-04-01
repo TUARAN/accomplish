@@ -33,4 +33,5 @@ export { acquirePidLock, PidLockError } from './pid-lock.js';
 export type { PidLockHandle, PidLockPayload } from './pid-lock.js';
 
 export { installCrashHandlers } from './crash-handlers.js';
-export { logger } from './logger.js';
+export { logger, createLogger } from './logger.js';
+export type { DaemonLogger } from './logger.js';

@@ -1,7 +1,9 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
-import { createStorage, type StorageAPI } from '@accomplish_ai/agent-core';
+import { createStorage, createLogger, type StorageAPI } from '@accomplish_ai/agent-core';
+
+const logger = createLogger('StorageService');
 
 const DEV_DEFAULT_DATA_DIR = join(homedir(), '.accomplish');
 
@@ -35,7 +37,7 @@ export class StorageService {
     });
 
     this.storage.initialize();
-    console.log(`[StorageService] Database initialized at ${databasePath}`);
+    logger.info(`Database initialized at ${databasePath}`);
     return this.storage;
   }
 
@@ -50,7 +52,7 @@ export class StorageService {
     if (this.storage) {
       this.storage.close();
       this.storage = null;
-      console.log('[StorageService] Database closed');
+      logger.info('Database closed');
     }
   }
 }

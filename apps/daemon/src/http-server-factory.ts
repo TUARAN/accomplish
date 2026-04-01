@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import http from 'node:http';
+import { createLogger } from '@accomplish_ai/agent-core';
 import { RateLimiter } from './rate-limiter.js';
 
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
@@ -72,6 +73,7 @@ export function createHttpServer(
   options: HttpServerOptions,
 ): Promise<{ server: http.Server; port: number }> {
   const { authToken, rateLimiter, routes, serviceName, port: requestedPort } = options;
+  const logger = createLogger(serviceName);
 
   return new Promise((resolve, reject) => {
     const server = http.createServer(async (req, res) => {
@@ -116,25 +118,25 @@ export function createHttpServer(
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Internal server error' }));
         }
-        console.error(`[${serviceName}] Unhandled error in ${route.method} ${route.path}:`, error);
+        logger.error(`Unhandled error in ${route.method} ${route.path}:`, error);
       }
     });
 
     server.listen(requestedPort ?? 0, '127.0.0.1', () => {
       const addr = server.address();
       const port = addr && typeof addr === 'object' ? addr.port : 0;
-      console.log(`[${serviceName}] Listening on port ${port}`);
+      logger.info(`Listening on port ${port}`);
       resolve({ server, port });
     });
 
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE' && requestedPort) {
         // Port already in use — fall back to OS-assigned port
-        console.warn(`[${serviceName}] Port ${requestedPort} in use, falling back to random port`);
+        logger.warn(`Port ${requestedPort} in use, falling back to random port`);
         server.listen(0, '127.0.0.1', () => {
           const addr = server.address();
           const port = addr && typeof addr === 'object' ? addr.port : 0;
-          console.log(`[${serviceName}] Listening on fallback port ${port}`);
+          logger.info(`Listening on fallback port ${port}`);
           resolve({ server, port });
         });
       } else {

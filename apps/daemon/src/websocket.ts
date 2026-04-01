@@ -1,4 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
+import { createLogger } from '@accomplish_ai/agent-core';
+
+const logger = createLogger('WebSocket');
 import type { Server } from 'http';
 
 export type DaemonEvent =
@@ -26,7 +29,7 @@ export function setupWebSocket(server: Server): WebSocketServer {
   wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws) => {
-    console.log('[WebSocket] Client connected. Total:', wss!.clients.size);
+    logger.info(`Client connected. Total: ${wss?.clients.size ?? 0}`);
 
     ws.on('message', (raw) => {
       let msg: ClientMessage;
@@ -37,29 +40,29 @@ export function setupWebSocket(server: Server): WebSocketServer {
           parsed === null ||
           typeof (parsed as Record<string, unknown>).type !== 'string'
         ) {
-          console.warn('[WebSocket] Received message with invalid shape, ignoring');
+          logger.warn('Received message with invalid shape, ignoring');
           return;
         }
         msg = parsed as ClientMessage;
       } catch (err) {
-        console.warn('[WebSocket] Failed to parse incoming message:', err);
+        logger.warn('Failed to parse incoming message:', err);
         return;
       }
       messageHandlers.forEach((handler) => {
         try {
           handler(msg);
         } catch (err) {
-          console.error('[WebSocket] Handler error:', err);
+          logger.error('Handler error:', err);
         }
       });
     });
 
     ws.on('close', () => {
-      console.log('[WebSocket] Client disconnected. Total:', wss!.clients.size);
+      logger.info(`Client disconnected. Total: ${wss?.clients.size ?? 0}`);
     });
   });
 
-  console.log('[WebSocket] Server ready on /ws');
+  logger.info('Server ready on /ws');
   return wss;
 }
 

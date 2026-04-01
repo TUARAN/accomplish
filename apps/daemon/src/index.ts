@@ -8,6 +8,7 @@ import {
   getPidFilePath,
   acquirePidLock,
   installCrashHandlers,
+  logger,
   type PidLockHandle,
   PERMISSION_API_PORT,
   QUESTION_API_PORT,
@@ -56,15 +57,15 @@ async function main(): Promise<void> {
   }
 
   if (!dataDir && isDevMode) {
-    console.warn('[Daemon] Warning: running in dev mode without --data-dir, using ~/.accomplish');
+    logger.warn('Warning: running in dev mode without --data-dir, using ~/.accomplish');
   }
 
-  console.log(`[Daemon] Starting... (dataDir=${dataDir ?? '~/.accomplish (dev fallback)'})`);
+  logger.info(`Starting... (dataDir=${dataDir ?? '~/.accomplish (dev fallback)'})`);
 
   // 1. Acquire PID lock scoped to dataDir (atomic, with stale detection)
   const pidPath = getPidFilePath(dataDir);
   pidLock = acquirePidLock(pidPath);
-  console.log(`[Daemon] PID lock acquired: ${pidLock.pidPath} (pid=${process.pid})`);
+  logger.info(`PID lock acquired: ${pidLock.pidPath} (pid=${process.pid})`);
 
   // 2. Generate per-session auth token for HTTP APIs
   const authToken = crypto.randomUUID();
@@ -76,7 +77,7 @@ async function main(): Promise<void> {
   // 4. Crash recovery: mark stale running tasks as failed
   for (const task of storage.getTasks()) {
     if (task.status === 'running') {
-      console.warn(`[Daemon] Crash recovery: marking stale task ${task.id} as failed`);
+      logger.warn(`Crash recovery: marking stale task ${task.id} as failed`);
       storage.updateTaskStatus(task.id, 'failed', new Date().toISOString());
     }
   }
@@ -109,8 +110,8 @@ async function main(): Promise<void> {
   const socketPath = args.socketPath || getSocketPath(dataDir);
   const rpc = new DaemonRpcServer({
     socketPath,
-    onConnection: (clientId) => console.log(`[Daemon] Client connected: ${clientId}`),
-    onDisconnection: (clientId) => console.log(`[Daemon] Client disconnected: ${clientId}`),
+    onConnection: (clientId) => logger.info(`Client connected: ${clientId}`),
+    onDisconnection: (clientId) => logger.info(`Client disconnected: ${clientId}`),
   });
 
   // 7. Initialize permission service
@@ -166,9 +167,9 @@ async function main(): Promise<void> {
 
   // Start scheduler after RPC server is ready
   schedulerService.start();
-  console.log('[Daemon] Scheduler started');
+  logger.info('Scheduler started');
 
-  console.log(`[Daemon] Listening on ${socketPath}`);
+  logger.info(`Listening on ${socketPath}`);
 
   // 12. Graceful shutdown with drain phase
   let shuttingDown = false;
@@ -177,15 +178,15 @@ async function main(): Promise<void> {
       return;
     }
     shuttingDown = true;
-    console.log('[Daemon] Shutting down...');
+    logger.info('Shutting down...');
 
     // Stop scheduler FIRST — prevent new tasks from being launched during drain
     schedulerService.stop();
-    console.log('[Daemon] Scheduler stopped');
+    logger.info('Scheduler stopped');
 
     const activeCount = taskService.getActiveTaskCount();
     if (activeCount > 0) {
-      console.log(`[Daemon] Draining ${activeCount} active task(s)...`);
+      logger.info(`Draining ${activeCount} active task(s)...`);
       await new Promise<void>((resolve) => {
         let remaining = taskService.getActiveTaskCount();
         if (remaining === 0) {
@@ -194,7 +195,7 @@ async function main(): Promise<void> {
         }
 
         const drainTimeout = setTimeout(() => {
-          console.warn('[Daemon] Drain timeout reached, force-killing active tasks');
+          logger.warn('Drain timeout reached, force-killing active tasks');
           taskService.dispose();
           resolve();
         }, DRAIN_TIMEOUT_MS);
@@ -220,12 +221,12 @@ async function main(): Promise<void> {
     await rpc.stop();
     storageService.close();
     pidLock?.release();
-    console.log('[Daemon] Shutdown complete');
+    logger.info('Shutdown complete');
     process.exit(0);
   };
 
   const forceShutdown = () => {
-    console.error('[Daemon] Forced shutdown after timeout');
+    logger.error('Forced shutdown after timeout');
     pidLock?.release();
     process.exit(1);
   };
@@ -234,7 +235,7 @@ async function main(): Promise<void> {
   rpc.registerMethod(
     'daemon.shutdown',
     safeHandler(async () => {
-      console.log('[Daemon] Shutdown requested via RPC');
+      logger.info('Shutdown requested via RPC');
       // Defer actual shutdown to after the RPC response is sent
       setTimeout(() => void shutdown(), 100);
       return Promise.resolve();
@@ -252,7 +253,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error('[Daemon] Fatal error:', err);
+  logger.error('Fatal error:', err);
   pidLock?.release();
   process.exit(1);
 });
