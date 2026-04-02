@@ -158,6 +158,11 @@
       {
         "from": "../../apps/daemon/dist",
         "to": "daemon"
+      },
+      {
+        "from": "resources/nodejs",
+        "to": "nodejs",
+        "filter": ["**/*"]
       }
     ],
     "asar": true,
