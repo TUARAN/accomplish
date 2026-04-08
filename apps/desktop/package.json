@@ -3,7 +3,7 @@
   "version": "0.3.8",
   "private": true,
   "type": "module",
-  "description": "Accomplish Desktop App",
+  "description": "智能消息数字员工桌面应用",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "postinstall": "node scripts/postinstall.cjs",
@@ -97,8 +97,8 @@
     "npmRebuild": false,
     "compression": "normal",
     "appId": "ai.accomplish.desktop",
-    "productName": "Accomplish (formerly Openwork)",
-    "artifactName": "Accomplish-${version}-${os}-${arch}.${ext}",
+    "productName": "智能消息数字员工",
+    "artifactName": "智能消息数字员工-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release",
       "buildResources": "resources"
@@ -130,6 +130,10 @@
         "to": "icon.png"
       },
       {
+        "from": "resources/hf-local-server.mjs",
+        "to": "hf-local-server.mjs"
+      },
+      {
         "from": "../../packages/agent-core/mcp-tools",
         "to": "mcp-tools",
         "filter": [
@@ -156,13 +160,85 @@
         ]
       },
       {
+        "from": "resources/hf-models",
+        "to": "hf-models",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "../../apps/daemon/dist",
         "to": "daemon"
       },
       {
         "from": "resources/nodejs",
         "to": "nodejs",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/@huggingface+transformers@3.8.1/node_modules/@huggingface/transformers",
+        "to": "node_modules/@huggingface/transformers",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/onnxruntime-node@1.21.0/node_modules/onnxruntime-node",
+        "to": "node_modules/onnxruntime-node",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/onnxruntime-common@1.21.0/node_modules/onnxruntime-common",
+        "to": "node_modules/onnxruntime-common",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp",
+        "to": "node_modules/sharp",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/@img+colour@1.1.0/node_modules/@img/colour",
+        "to": "node_modules/@img/colour",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/@img+sharp-darwin-arm64@0.34.5/node_modules/@img/sharp-darwin-arm64",
+        "to": "node_modules/@img/sharp-darwin-arm64",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/@img+sharp-libvips-darwin-arm64@1.2.4/node_modules/@img/sharp-libvips-darwin-arm64",
+        "to": "node_modules/@img/sharp-libvips-darwin-arm64",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc",
+        "to": "node_modules/detect-libc",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/.pnpm/semver@7.7.4/node_modules/semver",
+        "to": "node_modules/semver",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asar": true,
@@ -184,6 +260,13 @@
       "node_modules/node-pty/package.json",
       "node_modules/better-sqlite3/build/**/*.node",
       "node_modules/better-sqlite3/package.json",
+      "node_modules/onnxruntime-node/bin/**/*.node",
+      "node_modules/onnxruntime-node/bin/**/*.dylib",
+      "node_modules/onnxruntime-node/package.json",
+      "node_modules/sharp/**/*.node",
+      "node_modules/sharp/package.json",
+      "node_modules/@img/**/*.node",
+      "node_modules/@img/**/*.dylib",
       "dist-electron/main/mcp/*.js",
       "node_modules/opencode-linux-x64/bin/opencode",
       "node_modules/opencode-linux-x64/package.json",
@@ -242,7 +325,7 @@
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Accomplish",
+      "shortcutName": "智能消息数字员工",
       "runAfterFinish": true,
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",

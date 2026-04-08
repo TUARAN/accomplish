@@ -73,7 +73,7 @@ export function SettingsDialog({
           <div className="px-3 py-2 mb-1">
             <img
               src={logoImage}
-              alt="Accomplish"
+              alt="智能消息数字员工"
               className="dark:invert"
               style={{ height: '20px', paddingLeft: '6px' }}
             />

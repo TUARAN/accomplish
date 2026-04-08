@@ -18,6 +18,11 @@ import * as workspaceManager from './store/workspaceManager';
 import { getLogCollector } from './logging';
 import { skillsManager } from './skills';
 import { startHuggingFaceServer } from './providers/huggingface-local';
+import {
+  DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME,
+  DEFAULT_HF_LOCAL_MODEL_ID,
+  hasCachedModel as hasCachedHuggingFaceModel,
+} from './providers/huggingface-local';
 import { createTray } from './tray';
 import {
   bootstrapDaemon,
@@ -37,6 +42,8 @@ function logMain(level: 'INFO' | 'WARN' | 'ERROR', msg: string, data?: Record<st
 }
 
 export type CreateWindowFn = () => void;
+
+const LEGACY_UNSUPPORTED_HF_MODEL_ID = 'onnx-community/Qwen3.5-0.8B-Text-ONNX';
 
 /**
  * Async startup body — called inside `app.whenReady().then(...)`.
@@ -80,6 +87,8 @@ export async function startApp(
     logMain('ERROR', '[Main] Workspace initialization failed', { err: String(err) });
     throw err;
   }
+
+  ensureDefaultLocalModelConfiguration();
 
   try {
     const storage = getStorage();
@@ -245,4 +254,96 @@ export async function startApp(
       }
     }
   });
+}
+
+function ensureDefaultLocalModelConfiguration(): void {
+  const storage = getStorage();
+  const selectedModel = storage.getSelectedModel();
+  const hfProvider = storage.getConnectedProvider('huggingface-local');
+  const hfConfig = storage.getHuggingFaceLocalConfig();
+
+  const shouldNormalizeLegacyHfModel =
+    selectedModel?.model === LEGACY_UNSUPPORTED_HF_MODEL_ID ||
+    hfProvider?.selectedModelId === LEGACY_UNSUPPORTED_HF_MODEL_ID ||
+    hfProvider?.selectedModelId === `huggingface-local/${LEGACY_UNSUPPORTED_HF_MODEL_ID}` ||
+    hfConfig?.selectedModelId === LEGACY_UNSUPPORTED_HF_MODEL_ID;
+
+  if (shouldNormalizeLegacyHfModel && hasCachedHuggingFaceModel(DEFAULT_HF_LOCAL_MODEL_ID)) {
+    const now = new Date().toISOString();
+    const selectedModelId = `huggingface-local/${DEFAULT_HF_LOCAL_MODEL_ID}`;
+    storage.setHuggingFaceLocalConfig({
+      selectedModelId: DEFAULT_HF_LOCAL_MODEL_ID,
+      serverPort: hfConfig?.serverPort ?? null,
+      enabled: true,
+      quantization: 'q4',
+      devicePreference: 'auto',
+    });
+    storage.setConnectedProvider('huggingface-local', {
+      providerId: 'huggingface-local',
+      connectionStatus: 'connected',
+      selectedModelId,
+      credentials: {
+        type: 'huggingface-local',
+        modelId: DEFAULT_HF_LOCAL_MODEL_ID,
+      },
+      lastConnectedAt: now,
+      availableModels: [
+        {
+          id: selectedModelId,
+          name: DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME,
+        },
+      ],
+    });
+    storage.setActiveProvider('huggingface-local');
+    storage.setSelectedModel({
+      provider: 'huggingface-local',
+      model: DEFAULT_HF_LOCAL_MODEL_ID,
+    });
+    logMain(
+      'INFO',
+      `[Main] Replaced legacy unsupported local model with default: ${DEFAULT_HF_LOCAL_MODEL_ID}`,
+    );
+  }
+
+  if (storage.hasReadyProvider()) {
+    return;
+  }
+
+  if (!hasCachedHuggingFaceModel(DEFAULT_HF_LOCAL_MODEL_ID)) {
+    logMain('INFO', '[Main] Default bundled HuggingFace model not found; skipping auto-config');
+    return;
+  }
+
+  const selectedModelId = `huggingface-local/${DEFAULT_HF_LOCAL_MODEL_ID}`;
+  const now = new Date().toISOString();
+
+  storage.setHuggingFaceLocalConfig({
+    selectedModelId: DEFAULT_HF_LOCAL_MODEL_ID,
+    serverPort: null,
+    enabled: true,
+    quantization: 'q4',
+    devicePreference: 'auto',
+  });
+  storage.setConnectedProvider('huggingface-local', {
+    providerId: 'huggingface-local',
+    connectionStatus: 'connected',
+    selectedModelId,
+    credentials: {
+      type: 'huggingface-local',
+      modelId: DEFAULT_HF_LOCAL_MODEL_ID,
+    },
+    lastConnectedAt: now,
+    availableModels: [
+      {
+        id: selectedModelId,
+        name: DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME,
+      },
+    ],
+  });
+  storage.setActiveProvider('huggingface-local');
+  storage.setSelectedModel({
+    provider: 'huggingface-local',
+    model: DEFAULT_HF_LOCAL_MODEL_ID,
+  });
+  logMain('INFO', `[Main] Auto-configured default local model: ${DEFAULT_HF_LOCAL_MODEL_ID}`);
 }

@@ -127,15 +127,18 @@ export default function Sidebar() {
         </ScrollArea>
 
         {/* Bottom Section - Logo and Settings */}
-        <div className="px-3 py-4 border-t border-border flex items-center justify-between">
+        <div className="px-3 py-4 border-t border-border flex items-end justify-between gap-3">
           {/* Logo - Bottom Left */}
-          <div className="flex items-center">
+          <div className="flex flex-col gap-1 min-w-0">
             <img
               src={logoImage}
-              alt="Accomplish"
+              alt="智能消息数字员工"
               className="dark:invert"
               style={{ height: '20px', paddingLeft: '6px' }}
             />
+            <div className="pl-[6px] text-[11px] leading-tight text-muted-foreground">
+              技术支持联系 19802021453
+            </div>
           </div>
 
           {/* Settings Button + Daemon Status - Bottom Right */}

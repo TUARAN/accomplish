@@ -33,9 +33,7 @@ export function useHuggingFaceProviderConnect({
   onConnect,
   onDisconnect,
 }: UseHuggingFaceProviderConnectParams): UseHuggingFaceProviderConnectReturn {
-  const [selectedModelId, setSelectedModelId] = useState(
-    'onnx-community/Llama-3.2-1B-Instruct-ONNX',
-  );
+  const [selectedModelId, setSelectedModelId] = useState('onnx-community/Qwen2.5-0.5B-Instruct');
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
@@ -52,7 +50,7 @@ export function useHuggingFaceProviderConnect({
         setSuggestedModels(suggested);
         if (cached.length > 0 && cached[0]?.id) {
           setSelectedModelId((prev) =>
-            prev === 'onnx-community/Llama-3.2-1B-Instruct-ONNX' ? cached[0].id : prev,
+            prev === 'onnx-community/Qwen2.5-0.5B-Instruct' ? cached[0].id : prev,
           );
         }
       })

@@ -148,6 +148,10 @@ export async function buildEnvironment(taskId: string): Promise<NodeJS.ProcessEn
   // Use the core function to set API keys and credentials
   env = buildOpenCodeEnvironment(env, envConfig);
 
+  if (hfProvider && !env.OPENAI_API_KEY) {
+    env.OPENAI_API_KEY = 'accomplish-local';
+  }
+
   if (taskId) {
     logOC('INFO', `[OpenCode CLI] Task ID in environment: ${taskId}`);
   }

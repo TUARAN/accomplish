@@ -58,7 +58,7 @@ if (process.env.CLEAN_START === '1') {
   logMain('INFO', '[Clean Mode] All singletons reset');
 }
 
-app.setName('Accomplish');
+app.setName('智能消息数字员工');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = app.isPackaged

@@ -20,6 +20,9 @@ export {
   getCachePath,
   SUGGESTED_MODELS,
   SUGGESTED_MODELS as HF_RECOMMENDED_MODELS,
+  DEFAULT_HF_LOCAL_MODEL_ID,
+  DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME,
+  hasCachedModel,
 } from './model-manager';
 
 export type { DownloadProgress, ProgressCallback } from './model-manager';

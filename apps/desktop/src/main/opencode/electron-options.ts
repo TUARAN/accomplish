@@ -16,6 +16,7 @@ import { getStorage } from '../store/storage';
 import { getLogCollector } from '../logging';
 import { getOpenCodeCliPath, isOpenCodeBundled } from './cli-resolver';
 import { buildEnvironment } from './environment-builder';
+import { startHuggingFaceServer } from '../providers/huggingface-local';
 import {
   generateOpenCodeConfig,
   getMcpToolsPath,
@@ -151,6 +152,18 @@ export async function onBeforeTaskStart(
   callbacks: TaskCallbacks,
   isFirstTask: boolean,
 ): Promise<void> {
+  const storage = getStorage();
+  const activeModel = storage.getActiveProviderModel();
+  const selectedModel = activeModel || storage.getSelectedModel();
+  if (selectedModel?.provider === 'huggingface-local') {
+    const hfModelId = selectedModel.model.replace(/^huggingface-local\//, '');
+    callbacks.onProgress({ stage: 'model', message: '正在启动本地模型...', isFirstTask });
+    const serverResult = await startHuggingFaceServer(hfModelId);
+    if (!serverResult.success) {
+      throw new Error(serverResult.error || 'Failed to start HuggingFace local model server');
+    }
+  }
+
   if (isFirstTask) {
     callbacks.onProgress({ stage: 'browser', message: 'Preparing browser...', isFirstTask });
   }

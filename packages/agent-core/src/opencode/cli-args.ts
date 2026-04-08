@@ -52,6 +52,9 @@ export function buildCliArgs(options: BuildCliArgsOptions): string[] {
     } else if (selectedModel.provider === 'custom') {
       const modelId = selectedModel.model.replace(/^custom\//, '');
       args.push('--model', `custom/${modelId}`);
+    } else if (selectedModel.provider === 'huggingface-local') {
+      const modelId = selectedModel.model.replace(/^huggingface-local\//, '');
+      args.push('--model', `huggingface-local/${modelId}`);
     } else {
       args.push('--model', selectedModel.model);
     }

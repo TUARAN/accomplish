@@ -50,7 +50,7 @@ export function createMainWindow(opts: {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: 'Accomplish',
+    title: '智能消息数字员工',
     icon: icon.isEmpty() ? undefined : icon,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#171717' : '#f9f9f9',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
@@ -90,11 +90,6 @@ export function createMainWindow(opts: {
   });
 
   mainWindow.maximize();
-
-  const isE2EMode = (global as Record<string, unknown>).E2E_SKIP_AUTH === true;
-  if (!app.isPackaged && !isE2EMode && process.env.NODE_ENV !== 'test') {
-    mainWindow.webContents.openDevTools({ mode: 'right' });
-  }
 
   // dev mode needs 'unsafe-inline' for @vitejs/plugin-react HMR preamble (never distributed)
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {

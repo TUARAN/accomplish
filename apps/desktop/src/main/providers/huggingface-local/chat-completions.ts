@@ -16,6 +16,16 @@ import { writeJsonError, validateSamplingParams } from './request-helpers';
 
 export { validateSamplingParams };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function decodeGeneratedText(tokenizer: any, outputTensor: any, promptLength: number) {
+  const allTokens = Array.from(outputTensor?.ort_tensor?.cpuData || []);
+  const generatedTokens = allTokens.slice(promptLength);
+  return {
+    text: tokenizer.decode(generatedTokens, { skip_special_tokens: true }),
+    completionTokens: generatedTokens.length,
+  };
+}
+
 /**
  * Handle a chat completion request (non-streaming).
  */
@@ -48,10 +58,7 @@ export async function handleChatCompletion(
     });
 
     const promptLength = inputs.input_ids.dims?.[1] || 0;
-    const generatedTokens = outputs.slice(null, promptLength);
-    const text = state.tokenizer!.decode(generatedTokens[0], { skip_special_tokens: true });
-
-    const completionTokens = generatedTokens.dims?.[1] || 0;
+    const { text, completionTokens } = decodeGeneratedText(state.tokenizer, outputs, promptLength);
     const totalTokens = promptLength + completionTokens;
 
     const result = {
@@ -121,13 +128,13 @@ export async function handleStreamingCompletion(
       do_sample: temperature > 0,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       callback_function: (output: any) => {
-        const lastToken = output.slice(null, -1);
         // Capture tokenizer before async generate to avoid null-deref if stopServer fires mid-stream
         const tokenizer = state.tokenizer;
         if (!tokenizer) {
           return;
         }
-        const tokenText = tokenizer.decode(lastToken[0], { skip_special_tokens: true });
+        const allTokens = Array.from(output?.ort_tensor?.cpuData || []);
+        const tokenText = tokenizer.decode(allTokens.slice(-1), { skip_special_tokens: true });
 
         if (tokenText) {
           const chunk = {

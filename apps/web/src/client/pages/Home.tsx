@@ -65,6 +65,15 @@ export function HomePage() {
               {t('title')}
             </motion.h1>
 
+            <motion.p
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.gentle, delay: 0.05 }}
+              className="max-w-[620px] text-center text-sm leading-6 text-muted-foreground"
+            >
+              {t('subtitle')}
+            </motion.p>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

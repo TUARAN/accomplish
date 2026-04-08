@@ -72,18 +72,33 @@ export async function buildEnvironment(
   const activeModel = storage.getActiveProviderModel();
   const selectedModel = storage.getSelectedModel();
   let ollamaHost: string | undefined;
+  let openAiBaseUrl: string | undefined;
   if (activeModel?.provider === 'ollama' && activeModel.baseUrl) {
     ollamaHost = activeModel.baseUrl;
   } else if (selectedModel?.provider === 'ollama' && selectedModel.baseUrl) {
     ollamaHost = selectedModel.baseUrl;
   }
+  const hfProvider =
+    activeModel?.provider === 'huggingface-local' || selectedModel?.provider === 'huggingface-local';
+  if (hfProvider) {
+    const hfConfig = storage.getHuggingFaceLocalConfig();
+    if (!hfConfig?.serverPort) {
+      throw new Error('HuggingFace Local server is not running. Please start the local model first.');
+    }
+    openAiBaseUrl = `http://127.0.0.1:${hfConfig.serverPort}/v1`;
+  }
   const envConfig: EnvironmentConfig = {
     apiKeys,
     bedrockCredentials: bedrockCredentials || undefined,
     taskId: taskId || undefined,
+    openAiBaseUrl,
     ollamaHost,
   };
-  return buildOpenCodeEnvironment(env, envConfig);
+  const builtEnv = buildOpenCodeEnvironment(env, envConfig);
+  if (hfProvider && !builtEnv.OPENAI_API_KEY) {
+    builtEnv.OPENAI_API_KEY = 'accomplish-local';
+  }
+  return builtEnv;
 }
 
 export async function buildCliArgs(config: TaskConfig, storage: StorageAPI): Promise<string[]> {

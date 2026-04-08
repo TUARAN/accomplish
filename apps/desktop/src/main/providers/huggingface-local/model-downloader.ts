@@ -5,6 +5,7 @@
  */
 
 import fs from 'fs';
+import { configureTransformersEnv } from './transformers-env';
 
 export interface DownloadProgress {
   modelId: string;
@@ -44,11 +45,10 @@ export async function downloadModel(
     // Dynamically import Transformers.js (it's ESM-only)
     const { env, AutoTokenizer, AutoModelForCausalLM } = await import('@huggingface/transformers');
 
-    // Configure cache directory
-    if (cacheDir) {
-      env.cacheDir = cacheDir;
-    }
-    env.allowLocalModels = true;
+    configureTransformersEnv(env, {
+      cacheDir: cacheDir || env.cacheDir,
+      allowLocalModels: true,
+    });
 
     // Download tokenizer + model via Transformers.js auto-download
     onProgress?.({ modelId, status: 'downloading', progress: 10 });

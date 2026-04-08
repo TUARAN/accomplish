@@ -3,8 +3,6 @@
  * Handles loading/unloading Transformers.js models into shared state.
  */
 
-import { app } from 'electron';
-import path from 'path';
 import { getLogCollector } from '../../logging';
 import { getStorage } from '../../store/storage';
 import {
@@ -14,6 +12,8 @@ import {
   activeGenerations,
   type ChatMessage,
 } from './server-state';
+import { getWritableHfCachePath, resolveExistingModelCacheRoot } from './model-paths';
+import { configureTransformersEnv } from './transformers-env';
 
 /**
  * Load a model into memory using Transformers.js.
@@ -50,9 +50,11 @@ export async function loadModel(modelId: string): Promise<void> {
       const { env, AutoTokenizer, AutoModelForCausalLM } =
         await import('@huggingface/transformers');
 
-      const cacheDir = path.join(app.getPath('userData'), 'hf-models');
-      env.cacheDir = cacheDir;
-      env.allowLocalModels = true;
+      const cacheDir = resolveExistingModelCacheRoot(modelId) || getWritableHfCachePath();
+      configureTransformersEnv(env, {
+        cacheDir,
+        allowLocalModels: true,
+      });
 
       // Stage new model and tokenizer
       const tokenizer = await AutoTokenizer.from_pretrained(modelId, {

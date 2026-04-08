@@ -1,5 +1,9 @@
-/** Local/self-hosted provider config builders: Ollama, LM Studio. */
-import { getOllamaConfig, getLMStudioConfig } from '../storage/repositories/index.js';
+/** Local/self-hosted provider config builders: Ollama, LM Studio, HuggingFace Local. */
+import {
+  getOllamaConfig,
+  getLMStudioConfig,
+  getHuggingFaceLocalConfig,
+} from '../storage/repositories/index.js';
 import { createConsoleLogger } from '../utils/logging.js';
 import type { ProviderModelConfig } from './config-generator.js';
 import type { ProviderBuildContext, ProviderBuildResult } from './config-provider-context.js';
@@ -121,4 +125,40 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
     };
   }
   return { configs: [], enableToAdd: [] };
+}
+
+export function buildHuggingFaceLocalConfig(ctx: ProviderBuildContext): ProviderBuildResult {
+  const { providerSettings } = ctx;
+  const hfProvider = providerSettings.connectedProviders['huggingface-local'];
+  const hfConfig = getHuggingFaceLocalConfig();
+  if (
+    hfProvider?.connectionStatus !== 'connected' ||
+    hfProvider.credentials.type !== 'huggingface-local' ||
+    !hfProvider.selectedModelId ||
+    !hfConfig?.serverPort
+  ) {
+    return { configs: [], enableToAdd: [] };
+  }
+
+  const modelId = hfProvider.selectedModelId.replace(/^huggingface-local\//, '');
+  const baseURL = `http://127.0.0.1:${hfConfig.serverPort}/v1`;
+  log.info(`[OpenCode Config Builder] HuggingFace Local configured: ${modelId} baseURL: ${baseURL}`);
+
+  return {
+    configs: [
+      {
+        id: 'huggingface-local',
+        npm: '@ai-sdk/openai-compatible',
+        name: 'HuggingFace Local',
+        options: {
+          baseURL,
+          apiKey: 'accomplish-local',
+        },
+        models: {
+          [modelId]: { name: modelId, tools: true },
+        },
+      },
+    ],
+    enableToAdd: ['huggingface-local'],
+  };
 }

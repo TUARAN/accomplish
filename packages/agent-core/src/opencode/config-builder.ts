@@ -9,7 +9,11 @@ import {
 } from '../storage/repositories/index.js';
 import { OPENAI_COMPATIBLE_PROVIDER_IDS } from './config-auth-sync.js';
 export { syncApiKeysToOpenCodeAuth } from './config-auth-sync.js';
-import { buildOllamaConfig, buildLMStudioConfig } from './config-providers-local.js';
+import {
+  buildOllamaConfig,
+  buildLMStudioConfig,
+  buildHuggingFaceLocalConfig,
+} from './config-providers-local.js';
 import { buildBedrockConfig } from './config-providers-bedrock.js';
 import { buildVertexConfig, buildAzureFoundryConfig } from './config-providers-vertex-azure.js';
 import { buildXaiConfig, buildGoogleConfig, buildZaiConfig } from './config-providers-ai-cloud.js';
@@ -104,6 +108,7 @@ export async function buildProviderConfigs(
   const results = await Promise.all([
     buildOllamaConfig(ctx),
     buildLMStudioConfig(ctx),
+    buildHuggingFaceLocalConfig(ctx),
     buildOpenRouterConfig(ctx),
     buildMoonshotConfig(ctx),
     buildLiteLLMConfig(ctx),
