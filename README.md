@@ -20,12 +20,14 @@
   <a href="https://discord.gg/kg5Nekpm"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
 </p>
 
-# Accomplish™ - Open Source AI Desktop Agent
+# Accomplish™ - Open Source AI Agent Client
 
-Accomplish is an open source AI desktop agent that automates file management, document creation, and browser tasks locally on your machine. Bring your own API keys (OpenAI, Anthropic, Google, xAI) or run local models via Ollama.
+Accomplish is an open source AI agent client designed to run on each user's own computer. It is built to do real work, not just chat: task execution, content generation, browser workflows, message handling, document processing, and business-oriented automation all run through a local desktop experience.
+
+By default, Accomplish ships with the local `Qwen3.5-0.8B` runtime so a new machine can start with a built-in model baseline. On top of that, it can connect to frontier hosted models and local model stacks, so teams can choose the right balance of cost, privacy, speed, and capability.
 
 <p align="center">
-  <strong>Runs locally on your machine. Bring your own API keys or local models. MIT licensed.</strong>
+  <strong>Runs locally on your machine. Built for action-oriented AI work. Open source and MIT licensed.</strong>
 </p>
 
 <p align="center">
@@ -54,33 +56,57 @@ Accomplish is an open source AI desktop agent that automates file management, do
 
 <br />
 
+## Product direction
+
+Accomplish is being shaped into a practical agent operating layer for everyday work on personal computers:
+
+- It runs on each person's own desktop instead of inside a centralized browser-only product.
+- It is designed to execute work, not only answer questions.
+- It starts with a bundled local model and can scale up to stronger external providers when needed.
+- It exposes a business-oriented Application Center for domain-specific workflows.
+- It stays extensible because the foundation is open source and provider-agnostic.
+
+In practice, that means Accomplish is aiming to become a local AI work client that combines:
+
+- conversational assistance
+- task planning and execution
+- structured content generation
+- browser and file operations
+- business workflow apps
+- provider flexibility for both local and cloud models
+
+<br />
+
+---
+
+<br />
+
 ## What makes it different
 
 <table>
 <tr>
 <td width="50%" valign="top" align="center">
 
-### 🖥️ It runs locally
+### 🖥️ Local-first desktop client
 
 <div align="left">
 
-- Your files stay on your machine
-- You decide which folders it can touch
-- Nothing gets sent to Accomplish (or anyone else)
+- Runs directly on the user's computer
+- Files, local state, and permissions stay close to the machine
+- The desktop shell can coordinate local tools, storage, and execution safely
 
 </div>
 
 </td>
 <td width="50%" valign="top" align="center">
 
-### 🔑 You bring your own AI
+### 🤖 Action-oriented agent
 
 <div align="left">
 
-- Use your own API key (OpenAI, Anthropic, etc.)
-- Or run with [Ollama](https://ollama.com) (no API key needed)
-- No subscription, no upsell
-- It's a tool—not a service
+- Handles conversations, task execution, structured workflows, and follow-up actions
+- Can work across documents, local files, browser tasks, and business processes
+- Built for "do the work" scenarios rather than pure chat
 
 </div>
 
@@ -89,27 +115,26 @@ Accomplish is an open source AI desktop agent that automates file management, do
 <tr>
 <td width="50%" valign="top" align="center">
 
-### 📖 It's open source
+### 🧩 Business Application Center
 
 <div align="left">
 
-- Every line of code is on GitHub
-- MIT licensed
-- Change it, fork it, break it, fix it
+- Includes an Application Center for workflow-specific agent experiences
+- Current direction includes business apps such as message auditing, product design support, and SMS labeling
+- Designed for stronger scripting, orchestration, and repeatable domain workflows
 
 </div>
 
 </td>
 <td width="50%" valign="top" align="center">
 
-### ⚡ It acts, not just chats
+### 🔌 Open foundation, flexible models
 
 <div align="left">
 
-- File management
-- Document creation
-- Custom automations
-- Skill learning
+- Open source codebase under MIT
+- Supports bundled local runtime plus external providers
+- Can connect to OpenAI, Anthropic, Google, xAI, DeepSeek, Moonshot, Z.AI, OpenRouter, Ollama, LM Studio, Bedrock, Azure Foundry, LiteLLM, and more
 
 </div>
 
@@ -123,15 +148,47 @@ Accomplish is an open source AI desktop agent that automates file management, do
 
 <br />
 
-## What it actually does
+## What it can do
 
-|                                                                    |                                                                      |                                                                         |
-| :----------------------------------------------------------------- | :------------------------------------------------------------------- | :---------------------------------------------------------------------- |
-| **📁 File Management**                                             | **✍️ Document Writing**                                              | **🔗 Tool Connections**                                                 |
-| Sort, rename, and move files based on content or rules you give it | Prompt it to write, summarize, or rewrite documents                  | Works with Notion, Google Drive, Dropbox, and more (through local APIs) |
-|                                                                    |                                                                      |                                                                         |
-| **⚙️ Custom Skills**                                               | **🛡️ Full Control**                                                  |                                                                         |
-| Define repeatable workflows, save them as skills                   | You approve every action. You can see logs. You can stop it anytime. |                                                                         |
+|                                                                                                        |                                                                                          |                                                                              |
+| :----------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- |
+| **💬 Conversation and Planning**                                                                       | **✍️ Content and Document Work**                                                         | **🌐 Browser and Web Tasks**                                                 |
+| Chat with the agent, break work into steps, continue interrupted tasks, and drive multi-step execution | Draft, summarize, rewrite, and structure documents, reports, notes, and business content | Research, navigate, and complete browser-based workflows with agent control  |
+|                                                                                                        |                                                                                          |                                                                              |
+| **📁 Local Files and Desktop Work**                                                                    | **🏢 Business Apps**                                                                     | **🔗 Tool and Provider Connections**                                         |
+| Work with local folders, files, and machine-level context through a desktop runtime                    | Launch focused workflows from the Application Center for domain-specific business tasks  | Connect to local and cloud model providers, plus external tools and services |
+
+<br />
+
+## Application Center direction
+
+The home screen is evolving toward an Application Center instead of a generic "favorites" area. The goal is to package agent capabilities into focused business apps that are easier to adopt inside real workflows.
+
+Examples of the current direction:
+
+- Message Insight Auditor: for message review, content verification, and risk detection
+- Product Design Officer: for product concept design, content structuring, and generation
+- SMS Labeling Officer: for labeling, classification, and rule-driven messaging workflows
+
+This layer is intended to provide stronger workflow guidance, better orchestration, and more repeatable outcomes than a blank chat box alone.
+
+<br />
+
+## Architecture
+
+Accomplish uses a split desktop architecture so the product can feel like a modern client while still having direct access to local execution:
+
+- `apps/web`: the React UI, routing, state management, and user-facing screens
+- `apps/desktop`: the Electron shell, preload bridge, local OS integration, and secure desktop packaging
+- `apps/daemon`: the background task daemon responsible for resilient task execution and scheduling
+- `packages/agent-core`: the shared core business logic, task lifecycle, storage, types, and MCP tooling
+
+This structure makes it possible to combine:
+
+- a fast renderer/UI layer
+- a thin desktop host
+- a long-running local execution process
+- shared agent logic reused across surfaces
 
 <br />
 
@@ -139,14 +196,16 @@ Accomplish is an open source AI desktop agent that automates file management, do
 
 - Clean up messy folders by project, file type, or date
 - Draft, summarize, and rewrite docs, reports, and meeting notes
-- Automate browser workflows like research and form entry
+- Automate browser workflows like research, auditing, and form entry
 - Generate weekly updates from files and notes
 - Prepare meeting materials from docs and calendars
+- Review messages or SMS content in business-specific agent flows
 
 <br />
 
 ## Supported models and providers
 
+- Bundled local runtime: `Qwen3.5-0.8B`
 - Anthropic (Claude)
 - OpenAI (GPT)
 - Google AI (Gemini)
@@ -167,7 +226,7 @@ Accomplish is an open source AI desktop agent that automates file management, do
 
 ## Privacy and local-first
 
-Accomplish runs locally on your machine. Your files stay on your device, and you choose which folders it can access.
+Accomplish runs locally on your machine. Your files stay on your device, and you choose which folders it can access. The desktop shell, daemon, and local model/runtime path are designed so the product can be useful even before wiring in external services, while still allowing stronger hosted providers when needed.
 
 <br />
 
