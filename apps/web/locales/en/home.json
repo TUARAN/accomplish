@@ -1,6 +1,6 @@
 {
   "title": "Smart Messaging Digital Employee",
-  "subtitle": "Ships with the local Qwen2.5-0.5B model by default, with conversational AI, task planning, content generation, and messaging support.",
+  "subtitle": "Ships with the local Qwen3.5-0.8B model by default, with conversational AI, task planning, content generation, and messaging support.",
   "inputPlaceholder": "Built from open-source project xx",
   "favorites": {
     "title": "Favorites",

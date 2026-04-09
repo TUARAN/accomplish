@@ -13,6 +13,7 @@ const path = require('path');
 const isWindows = process.platform === 'win32';
 const nodeModulesPath = path.join(__dirname, '..', 'node_modules');
 const accomplishPath = path.join(nodeModulesPath, '@accomplish_ai');
+const localElectronDistPath = path.join(nodeModulesPath, 'electron', 'dist');
 
 // Save symlink targets for restoration
 const workspacePackages = ['agent-core'];
@@ -34,6 +35,15 @@ const pnpmSymlinksToResolve = [
   'opencode-linux-x64-baseline-musl',
   'opencode-windows-x64',
   'opencode-windows-x64-baseline',
+  '@huggingface/transformers',
+  'onnxruntime-node',
+  'onnxruntime-common',
+  'sharp',
+  '@img/colour',
+  '@img/sharp-darwin-arm64',
+  '@img/sharp-libvips-darwin-arm64',
+  'detect-libc',
+  'semver',
 ];
 const resolvedSymlinks = {};
 
@@ -82,13 +92,18 @@ try {
   // On Windows, skip native module rebuild (use prebuilt binaries)
   // This avoids issues with node-pty's winpty.gyp batch file handling
   const npmRebuildFlag = isWindows ? ' --config.npmRebuild=false' : '';
+  const electronDistFlag = fs.existsSync(localElectronDistPath)
+    ? ` --config.electronDist=${JSON.stringify(localElectronDistPath)}`
+    : '';
 
   // Use npx to run electron-builder to ensure it's found in node_modules
-  const command = `npx electron-builder ${args}${npmRebuildFlag}`;
+  const command = `npx electron-builder ${args}${npmRebuildFlag}${electronDistFlag}`;
 
   console.log('Running:', command);
   if (isWindows) {
     console.log('(Skipping native module rebuild on Windows - using prebuilt binaries)');
+  } else if (electronDistFlag) {
+    console.log('Using local Electron dist:', localElectronDistPath);
   }
   execSync(command, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
 } finally {

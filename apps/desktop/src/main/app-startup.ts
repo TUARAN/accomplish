@@ -43,7 +43,7 @@ function logMain(level: 'INFO' | 'WARN' | 'ERROR', msg: string, data?: Record<st
 
 export type CreateWindowFn = () => void;
 
-const LEGACY_UNSUPPORTED_HF_MODEL_ID = 'onnx-community/Qwen3.5-0.8B-Text-ONNX';
+const LEGACY_DEFAULT_HF_MODEL_ID = 'onnx-community/Qwen2.5-0.5B-Instruct';
 
 /**
  * Async startup body — called inside `app.whenReady().then(...)`.
@@ -263,10 +263,10 @@ function ensureDefaultLocalModelConfiguration(): void {
   const hfConfig = storage.getHuggingFaceLocalConfig();
 
   const shouldNormalizeLegacyHfModel =
-    selectedModel?.model === LEGACY_UNSUPPORTED_HF_MODEL_ID ||
-    hfProvider?.selectedModelId === LEGACY_UNSUPPORTED_HF_MODEL_ID ||
-    hfProvider?.selectedModelId === `huggingface-local/${LEGACY_UNSUPPORTED_HF_MODEL_ID}` ||
-    hfConfig?.selectedModelId === LEGACY_UNSUPPORTED_HF_MODEL_ID;
+    selectedModel?.model === LEGACY_DEFAULT_HF_MODEL_ID ||
+    hfProvider?.selectedModelId === LEGACY_DEFAULT_HF_MODEL_ID ||
+    hfProvider?.selectedModelId === `huggingface-local/${LEGACY_DEFAULT_HF_MODEL_ID}` ||
+    hfConfig?.selectedModelId === LEGACY_DEFAULT_HF_MODEL_ID;
 
   if (shouldNormalizeLegacyHfModel && hasCachedHuggingFaceModel(DEFAULT_HF_LOCAL_MODEL_ID)) {
     const now = new Date().toISOString();
@@ -299,10 +299,7 @@ function ensureDefaultLocalModelConfiguration(): void {
       provider: 'huggingface-local',
       model: DEFAULT_HF_LOCAL_MODEL_ID,
     });
-    logMain(
-      'INFO',
-      `[Main] Replaced legacy unsupported local model with default: ${DEFAULT_HF_LOCAL_MODEL_ID}`,
-    );
+    logMain('INFO', `[Main] Migrated legacy default local model to: ${DEFAULT_HF_LOCAL_MODEL_ID}`);
   }
 
   if (storage.hasReadyProvider()) {

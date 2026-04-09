@@ -38,6 +38,12 @@ export const HF_RECOMMENDED_MODELS = [
     quantization: 'fp16',
   },
   {
+    id: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
+    displayName: 'Qwen 3.5 0.8B Text',
+    size: 680_000_000,
+    quantization: 'q4',
+  },
+  {
     id: 'onnx-community/Qwen2.5-0.5B-Instruct',
     displayName: 'Qwen 2.5 0.5B Instruct',
     size: 500_000_000,

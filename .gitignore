@@ -77,6 +77,7 @@ specs/
 
 # Bundled Node.js binaries (downloaded via `pnpm -F @accomplish/desktop download:nodejs`)
 apps/desktop/resources/nodejs/
+apps/desktop/resources/hf-models/onnx-community/
 
 # Test local agent Chrome profile
 .accomplish-test-local-agent-chrome/

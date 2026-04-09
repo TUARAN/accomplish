@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
 
-export const DEFAULT_HF_LOCAL_MODEL_ID = 'onnx-community/Qwen2.5-0.5B-Instruct';
-export const DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME = 'Qwen2.5 0.5B Instruct (ONNX)';
+export const DEFAULT_HF_LOCAL_MODEL_ID = 'onnx-community/Qwen3.5-0.8B-Text-ONNX';
+export const DEFAULT_HF_LOCAL_MODEL_DISPLAY_NAME = 'Qwen3.5 0.8B Text (ONNX)';
 
 export function getWritableHfCachePath(): string {
   return path.join(app.getPath('userData'), 'hf-models');

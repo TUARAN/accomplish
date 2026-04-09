@@ -129,6 +129,9 @@ export function HuggingFaceProviderForm({
                     <option value="onnx-community/Phi-3.5-mini-instruct-onnx">
                       Phi-3.5 Mini Instruct (ONNX)
                     </option>
+                    <option value="onnx-community/Qwen3.5-0.8B-Text-ONNX">
+                      Qwen3.5 0.8B Text (ONNX)
+                    </option>
                     <option value="onnx-community/Qwen2.5-0.5B-Instruct">
                       Qwen2.5 0.5B Instruct (ONNX)
                     </option>

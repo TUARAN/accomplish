@@ -2,7 +2,7 @@ Place bundled local HuggingFace/ONNX model files in this directory when packagin
 
 Expected layout for the default model:
 
-`apps/desktop/resources/hf-models/onnx-community/Qwen2.5-0.5B-Instruct/...`
+`apps/desktop/resources/hf-models/onnx-community/Qwen3.5-0.8B-Text-ONNX/...`
 
 When this model tree is present, the desktop app will auto-configure
-`onnx-community/Qwen2.5-0.5B-Instruct` as the default local model on first launch.
+`onnx-community/Qwen3.5-0.8B-Text-ONNX` as the default local model on first launch.
