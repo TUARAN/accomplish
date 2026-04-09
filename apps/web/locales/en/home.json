@@ -3,14 +3,33 @@
   "subtitle": "Ships with the local Qwen3.5-0.8B model by default, with conversational AI, task planning, content generation, and messaging support.",
   "inputPlaceholder": "Built from open-source project xx",
   "favorites": {
-    "title": "Favorites",
-    "empty": "Star completed or interrupted tasks to see them here.",
-    "remove": "Remove from favorites",
-    "showAll": "Show all {{count}} favorites",
-    "showAll_one": "Show {{count}} favorite",
-    "showAll_few": "Show all {{count}} favorites",
-    "showAll_many": "Show all {{count}} favorites",
-    "showAll_other": "Show all {{count}} favorites"
+    "title": "Application Center",
+    "description": "The Application Center includes business-ready apps such as Message Insight Auditor, Product Design Officer, and SMS Labeling Officer, designed for specific workflows with stronger scripting and orchestration capabilities.",
+    "empty": "The Application Center includes business-ready apps such as Message Insight Auditor, Product Design Officer, and SMS Labeling Officer, designed for specific workflows with stronger scripting and orchestration capabilities.",
+    "remove": "Remove from Application Center",
+    "showAll": "View all {{count}} apps",
+    "showAll_one": "View {{count}} app",
+    "showAll_few": "View all {{count}} apps",
+    "showAll_many": "View all {{count}} apps",
+    "showAll_other": "View all {{count}} apps",
+    "cardType": "QUICK APP",
+    "launch": "Tap to launch",
+    "businessTag": "BUSINESS APP",
+    "comingSoon": "Production Ready",
+    "apps": {
+      "messageAuditor": {
+        "title": "Message Insight Auditor",
+        "description": "Built for message review, content verification, and risk detection across message inspection workflows."
+      },
+      "productDesigner": {
+        "title": "Product Design Officer",
+        "description": "Focused on product concept design, content structuring, and generation for more complex creative workflows."
+      },
+      "smsLabeler": {
+        "title": "SMS Labeling Officer",
+        "description": "Designed for SMS labeling, classification, and rule orchestration with stronger scripting capabilities."
+      }
+    }
   },
   "plusMenu": {
     "addContent": "Add content",

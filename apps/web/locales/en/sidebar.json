@@ -12,6 +12,20 @@
   "close": "Close",
   "confirmDelete": "Are you sure you want to delete this task?",
   "deleteTask": "Delete task",
+  "workspace": {
+    "default": "Default",
+    "manage": "Manage Workspaces..."
+  },
+  "status": {
+    "pending": "Pending",
+    "queued": "Queued",
+    "running": "Running",
+    "waiting_permission": "Waiting for approval",
+    "completed": "Completed",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "interrupted": "Interrupted"
+  },
   "favorite": {
     "add": "Add to favorites",
     "remove": "Remove from favorites"

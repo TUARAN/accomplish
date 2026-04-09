@@ -3,14 +3,33 @@
   "subtitle": "默认搭载 Qwen3.5-0.8B 本地大模型，具备智能对话、任务拆解、内容生成与消息处理能力。",
   "inputPlaceholder": "来自于开源项目 xx",
   "favorites": {
-    "title": "收藏",
-    "empty": "将已完成或已中断的任务加星即可在此显示。",
-    "remove": "从收藏中移除",
-    "showAll": "显示全部 {{count}} 个收藏",
-    "showAll_one": "显示 {{count}} 个收藏",
-    "showAll_few": "显示全部 {{count}} 个收藏",
-    "showAll_many": "显示全部 {{count}} 个收藏",
-    "showAll_other": "显示全部 {{count}} 个收藏"
+    "title": "应用中心",
+    "description": "面向具体场景设计，具备更强的脚本工具能力与流程编排能力。",
+    "empty": "面向具体场景设计，具备更强的脚本工具能力与流程编排能力。",
+    "remove": "从应用中心移除",
+    "showAll": "查看全部 {{count}} 个应用",
+    "showAll_one": "查看 {{count}} 个应用",
+    "showAll_few": "查看全部 {{count}} 个应用",
+    "showAll_many": "查看全部 {{count}} 个应用",
+    "showAll_other": "查看全部 {{count}} 个应用",
+    "cardType": "快捷应用",
+    "launch": "点击启动",
+    "businessTag": "业务应用",
+    "comingSoon": "投产使用",
+    "apps": {
+      "messageAuditor": {
+        "title": "阅信智核官",
+        "description": "聚焦消息阅信、内容核查与风险识别，适用于消息质检与阅信分析场景。"
+      },
+      "productDesigner": {
+        "title": "产品智绘官",
+        "description": "围绕产品方案设计、内容组织与文案生成，支持更复杂的创意与产出流程。"
+      },
+      "smsLabeler": {
+        "title": "短信智标官",
+        "description": "面向短信业务标注、分类与规则编排，具备更强的脚本工具与流程能力。"
+      }
+    }
   },
   "plusMenu": {
     "addContent": "添加内容",

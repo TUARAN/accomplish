@@ -12,6 +12,20 @@
   "close": "关闭",
   "confirmDelete": "确定要删除这个任务吗？",
   "deleteTask": "删除任务",
+  "workspace": {
+    "default": "默认",
+    "manage": "管理工作区..."
+  },
+  "status": {
+    "pending": "待处理",
+    "queued": "排队中",
+    "running": "运行中",
+    "waiting_permission": "待授权",
+    "completed": "已完成",
+    "failed": "失败",
+    "cancelled": "已取消",
+    "interrupted": "已中断"
+  },
   "favorite": {
     "add": "添加到收藏",
     "remove": "从收藏中移除"

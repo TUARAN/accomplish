@@ -12,8 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ConversationListItem from './ConversationListItem';
 import SettingsDialog from './SettingsDialog';
 import WorkspaceSelector from './WorkspaceSelector';
-import { Gear, ChatText, MagnifyingGlass } from '@phosphor-icons/react';
-import { DaemonStatusDot } from '@/components/DaemonStatusDot';
+import { ChatText, MagnifyingGlass } from '@phosphor-icons/react';
 import logoImage from '/assets/logo-1.png';
 
 export default function Sidebar() {
@@ -95,6 +94,21 @@ export default function Sidebar() {
           </Button>
         </div>
 
+        <div className="px-3 py-3 border-b border-border">
+          <Button
+            data-testid="sidebar-settings-button"
+            variant="outline"
+            className="w-full justify-center rounded-xl text-sm font-medium"
+            onClick={() => {
+              setSettingsInitialTab('providers');
+              setShowSettings(true);
+            }}
+            title="配置中心"
+          >
+            配置中心
+          </Button>
+        </div>
+
         {/* Conversation List */}
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
@@ -126,36 +140,18 @@ export default function Sidebar() {
           </div>
         </ScrollArea>
 
-        {/* Bottom Section - Logo and Settings */}
-        <div className="px-3 py-4 border-t border-border flex items-end justify-between gap-3">
-          {/* Logo - Bottom Left */}
-          <div className="flex flex-col gap-1 min-w-0">
+        {/* Bottom Section - Brand */}
+        <div className="px-3 py-4 border-t border-border">
+          <div className="flex flex-col items-center justify-center gap-1 text-center min-w-0">
             <img
               src={logoImage}
               alt="智能消息数字员工"
               className="dark:invert"
-              style={{ height: '20px', paddingLeft: '6px' }}
+              style={{ height: '20px' }}
             />
-            <div className="pl-[6px] text-[11px] leading-tight text-muted-foreground">
-              技术支持联系 19802021453
+            <div className="text-[11px] leading-tight text-muted-foreground">
+              技术支持联系 198****1453
             </div>
-          </div>
-
-          {/* Settings Button + Daemon Status - Bottom Right */}
-          <div className="flex items-center gap-2">
-            <DaemonStatusDot />
-            <Button
-              data-testid="sidebar-settings-button"
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setSettingsInitialTab('providers');
-                setShowSettings(true);
-              }}
-              title={t('settings')}
-            >
-              <Gear className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>

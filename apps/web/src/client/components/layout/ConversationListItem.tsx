@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { Task } from '@accomplish_ai/agent-core/common';
+import type { Task, TaskStatus } from '@accomplish_ai/agent-core/common';
 import { cn } from '@/lib/utils';
 import { X, Star, SpinnerGap } from '@phosphor-icons/react';
 import { useTaskStore } from '@/stores/taskStore';
@@ -45,6 +45,7 @@ export function ConversationListItem({ task }: ConversationListItemProps) {
   };
 
   const statusColor = STATUS_COLORS[task.status] || 'bg-muted-foreground';
+  const statusLabel = t(`status.${task.status as TaskStatus}`);
 
   return (
     <div
@@ -59,21 +60,26 @@ export function ConversationListItem({ task }: ConversationListItemProps) {
       }}
       title={task.summary || task.prompt}
       className={cn(
-        'w-full text-left p-2 rounded-lg text-xs font-medium transition-colors duration-200',
+        'w-full text-left rounded-lg px-2 py-2.5 text-xs font-medium transition-colors duration-200',
         'text-foreground hover:bg-accent hover:text-foreground',
-        'flex items-center gap-3 group relative cursor-pointer',
+        'group relative flex items-start gap-3 cursor-pointer',
         isActive && 'bg-accent text-foreground',
       )}
     >
-      <span className="flex items-center justify-center shrink-0 w-3 h-3">
+      <span className="mt-1 flex h-3 w-3 shrink-0 items-center justify-center">
         {task.status === 'running' || task.status === 'waiting_permission' ? (
           <SpinnerGap className="w-3 h-3 animate-spin text-muted-foreground" />
         ) : (
           <span className={cn('w-2 h-2 rounded-full', statusColor)} />
         )}
       </span>
-      <span className="block truncate flex-1 tracking-[0.18px]">{task.summary || task.prompt}</span>
-      <span className="relative flex items-center shrink-0 h-5">
+      <div className="min-w-0 flex-1">
+        <span className="block truncate tracking-[0.18px]">{task.summary || task.prompt}</span>
+        <span className="mt-1 block text-[11px] font-medium text-muted-foreground">
+          {statusLabel}
+        </span>
+      </div>
+      <span className="relative mt-0.5 flex h-5 shrink-0 items-center">
         {domains.length > 0 && (
           <span className="flex items-center group-hover:opacity-0 transition-opacity duration-200">
             {domains.map((domain, i) => (

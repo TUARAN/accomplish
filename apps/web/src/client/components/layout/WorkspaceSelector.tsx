@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Check, Settings2, Loader2 } from 'lucide-react';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 import {
@@ -17,6 +18,7 @@ interface WorkspaceSelectorProps {
 }
 
 export default function WorkspaceSelector({ onManageWorkspaces }: WorkspaceSelectorProps) {
+  const { t } = useTranslation('sidebar');
   const { workspaces, activeWorkspaceId, isSwitching, loadWorkspaces, switchWorkspace } =
     useWorkspaceStore();
 
@@ -25,7 +27,7 @@ export default function WorkspaceSelector({ onManageWorkspaces }: WorkspaceSelec
   }, [loadWorkspaces]);
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
-  const displayName = activeWorkspace?.name || 'Default';
+  const displayName = activeWorkspace?.name || t('workspace.default');
 
   return (
     <DropdownMenu>
@@ -76,7 +78,7 @@ export default function WorkspaceSelector({ onManageWorkspaces }: WorkspaceSelec
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onManageWorkspaces}>
               <Settings2 className="h-4 w-4 mr-2" />
-              Manage Workspaces...
+              {t('workspace.manage')}
             </DropdownMenuItem>
           </>
         )}
