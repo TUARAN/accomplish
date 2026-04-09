@@ -1,6 +1,6 @@
+/* global Buffer, console, process */
 import http from 'node:http';
 import fs from 'node:fs';
-import path from 'node:path';
 import { env, AutoTokenizer, AutoModelForCausalLM } from '@huggingface/transformers';
 
 function parseArgs(argv) {

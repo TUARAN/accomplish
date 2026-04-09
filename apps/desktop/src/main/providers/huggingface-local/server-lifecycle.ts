@@ -1,5 +1,4 @@
 import fs from 'fs';
-import http from 'http';
 import net from 'net';
 import path from 'path';
 import { spawn, type ChildProcess } from 'child_process';
@@ -7,13 +6,9 @@ import { app } from 'electron';
 import { getStorage } from '../../store/storage';
 import { getLogCollector } from '../../logging';
 import { getNodePath } from '../../utils/bundled-node';
-import {
-  getWritableHfCachePath,
-  resolveExistingModelCacheRoot,
-} from './model-paths';
+import { getWritableHfCachePath, resolveExistingModelCacheRoot } from './model-paths';
 import { getConfiguredRemoteHost } from './transformers-env';
 
-const DEFAULT_HF_SERVER_PORT = 8787;
 const HF_SERVER_PORT_CANDIDATES = [8787, 8788, 8789, 11535, 18087];
 const START_TIMEOUT_MS = 60_000;
 const POLL_INTERVAL_MS = 500;
@@ -38,7 +33,9 @@ function getServerWorkingDirectory(): string {
 }
 
 function getServerNodePath(): string {
-  return app.isPackaged ? path.join(process.resourcesPath, 'node_modules') : path.join(app.getAppPath(), 'node_modules');
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'node_modules')
+    : path.join(app.getAppPath(), 'node_modules');
 }
 
 function log(level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: Record<string, unknown>) {
