@@ -1,15 +1,16 @@
 /**
- * Scheduler cron parsing and matching utilities
+ * Cron expression parsing and matching utilities.
  *
- * Pure cron parsing helpers extracted from scheduler.ts.
- * No side effects — safe to import and test in isolation.
+ * ESM module — use .js extensions on imports.
  */
 
 /**
- * Parse a cron field into its expanded numeric values.
- * Supports: * (any), numbers, ranges (1-5), commas (1,3,5)
+ * Parse a cron expression into its 5 fields.
+ * Supports: minute hour day-of-month month day-of-week
+ * Supports: * (any), numbers, ranges (1-5), commas (1,3,5), steps (*\/N, start-end/step)
  */
-export function parseCronField(field: string, min: number, max: number): number[] {
+export function parseCronField(field: string, min: number, max: number): number[] | null {
+  // Wildcard: match all values
   if (field === '*') {
     const result: number[] = [];
     for (let i = min; i <= max; i++) {
@@ -22,39 +23,56 @@ export function parseCronField(field: string, min: number, max: number): number[
   const parts = field.split(',');
 
   for (const part of parts) {
-    if (/^\d+-\d+$/.test(part)) {
-      const rangeParts = part.split('-');
-      const start = parseInt(rangeParts[0], 10);
-      const end = parseInt(rangeParts[1], 10);
-      if (start > end || start < min || end > max) {
-        return [];
+    // */N — every Nth value
+    const stepWildcard = /^\*\/(\d+)$/.exec(part);
+    if (stepWildcard) {
+      const step = parseInt(stepWildcard[1], 10);
+      if (step <= 0) {
+        return null;
       }
-      for (let i = start; i <= end; i++) {
+      for (let i = min; i <= max; i += step) {
         values.push(i);
       }
-    } else if (/^\d+$/.test(part)) {
-      const val = parseInt(part, 10);
-      if (val < min || val > max) {
-        return [];
-      }
-      values.push(val);
-    } else {
-      return [];
+      continue;
     }
+
+    // start-end or start-end/step
+    const rangeStep = /^(\d+)-(\d+)(?:\/(\d+))?$/.exec(part);
+    if (rangeStep) {
+      const start = parseInt(rangeStep[1], 10);
+      const end = parseInt(rangeStep[2], 10);
+      const step = rangeStep[3] !== undefined ? parseInt(rangeStep[3], 10) : 1;
+      if (start > end || step <= 0) {
+        return null;
+      }
+      for (let i = start; i <= end; i += step) {
+        if (i >= min && i <= max) {
+          values.push(i);
+        }
+      }
+      continue;
+    }
+
+    // Single number
+    if (/^\d+$/.test(part)) {
+      const val = parseInt(part, 10);
+      if (val >= min && val <= max) {
+        values.push(val);
+      }
+      continue;
+    }
+
+    // Unrecognised pattern
+    return null;
   }
 
   if (values.length === 0) {
-    return [];
+    return null;
   }
 
-  // Deduplicate and sort, since ranges might overlap (e.g. "1,1-3")
   return Array.from(new Set(values)).sort((a, b) => a - b);
 }
 
-/**
- * Returns true if the given Date matches the cron expression.
- * Standard 5-field cron: minute hour day-of-month month day-of-week
- */
 export function matchesCron(cron: string, date: Date): boolean {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) {
@@ -68,6 +86,10 @@ export function matchesCron(cron: string, date: Date): boolean {
   const doms = parseCronField(domField, 1, 31);
   const months = parseCronField(monthField, 1, 12);
   const dows = parseCronField(dowField, 0, 6);
+
+  if (!minutes || !hours || !doms || !months || !dows) {
+    return false;
+  }
 
   // Standard cron OR semantics: when both dom and dow are restricted (non-wildcard),
   // a match occurs if dom OR dow matches. When either is wildcard, AND semantics apply.
@@ -93,7 +115,7 @@ export function matchesCron(cron: string, date: Date): boolean {
 
 /**
  * Calculate the next run time for a cron expression.
- * Returns ISO string or undefined if no match within 7 days.
+ * Returns ISO string or undefined if can't determine within 7 days.
  */
 export function getNextRunTime(cron: string): string | undefined {
   const now = new Date();
@@ -111,36 +133,4 @@ export function getNextRunTime(cron: string): string | undefined {
     check.setMinutes(check.getMinutes() + 1);
   }
   return undefined;
-}
-
-/** Cron field ranges indexed by position (0=minute, 1=hour, ...) */
-const CRON_FIELD_RANGES: [number, number][] = [
-  [0, 59], // minute
-  [0, 23], // hour
-  [1, 31], // day of month
-  [1, 12], // month
-  [0, 6], // day of week
-];
-
-/**
- * Validate a cron expression string. Throws if invalid.
- */
-export function validateCronExpression(cron: string): void {
-  const parts = cron.trim().split(/\s+/);
-  if (parts.length !== 5) {
-    throw new Error(`Invalid cron expression: "${cron}" — must have exactly 5 fields`);
-  }
-
-  for (let i = 0; i < 5; i++) {
-    const field = parts[i];
-    if (field === '*') {
-      continue;
-    }
-    const values = parseCronField(field, CRON_FIELD_RANGES[i][0], CRON_FIELD_RANGES[i][1]);
-    if (values.length === 0) {
-      throw new Error(
-        `Invalid cron expression: "${cron}" — field ${i + 1} ("${field}") has no valid values`,
-      );
-    }
-  }
 }

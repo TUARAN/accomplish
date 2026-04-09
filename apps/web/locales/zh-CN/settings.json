@@ -59,7 +59,18 @@
     "together": "Together AI",
     "fireworks": "Fireworks AI",
     "groq": "Groq",
-    "huggingface-local": "HuggingFace Local"
+    "huggingface-local": "HuggingFace Local",
+    "accomplish-ai": "Accomplish AI",
+    "accomplishAi": {
+      "description": "使用 Accomplish 提供的内置模型 - 无需 API 密钥。\n每月包含 200 个免费额度。",
+      "disconnect": "断开连接",
+      "exhaustedMessage": "额度已用完。将于 {{date}} 重置。",
+      "exhaustedMessageSoon": "额度已用完。即将重置。"
+    },
+    "venice": "Venice AI",
+    "nim": "NVIDIA NIM",
+    "custom": "自定义端点",
+    "copilot": "GitHub Copilot"
   },
   "providerLabels": {
     "anthropic": "Claude 系列模型",
@@ -81,7 +92,12 @@
     "together": "Llama 和 Mixtral 模型",
     "fireworks": "快速推理模型",
     "groq": "超快速 Llama 模型",
-    "huggingface-local": "本地推理"
+    "huggingface-local": "本地推理",
+    "accomplish-ai": "免费版",
+    "venice": "服务",
+    "nim": "NVIDIA 托管模型",
+    "custom": "自定义",
+    "copilot": "Copilot 模型"
   },
   "status": {
     "connected": "已连接",
@@ -510,12 +526,12 @@
     "secureStorage": "您的 API 密钥已安全存储在系统钥匙串中。",
     "howToUse": "使用方法：",
     "clickMicButton": "点击麦克风按钮",
-    "holdAltKey": "按住 Alt 键",
+    "holdAltKey": "按住 {{modifierKey}} 键",
     "tooltipSetup": "点击设置语音输入",
     "tooltipRecording": "正在录音 ({{duration}}) - 点击停止",
     "tooltipTranscribing": "正在转录...",
     "tooltipError": "转录过程中出错 - 点击重试",
-    "tooltipDefault": "点击录音或按住 Alt 键进行语音输入",
+    "tooltipDefault": "点击录音或按住 {{modifierKey}} 键进行语音输入",
     "processing": "处理中..."
   },
   "baseUrl": {
@@ -535,7 +551,7 @@
     "description": "Automate recurring tasks with cron expressions. Schedules persist across daemon restarts.",
     "empty": "No scheduled tasks. Create one to automate recurring work.",
     "addButton": "Add Schedule",
-    "autoStartWarning": "Enable 'Start at Login' in Settings \u2192 General to ensure schedules fire after system restart.",
+    "autoStartWarning": "Enable 'Start at Login' in Settings → General to ensure schedules fire after system restart.",
     "card": {
       "lastRun": "Last run",
       "nextRun": "Next run",
