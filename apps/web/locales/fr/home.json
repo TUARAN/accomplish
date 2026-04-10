@@ -1,5 +1,7 @@
 {
-  "title": "Qu'allez-vous accomplir aujourd'hui ?",
+  "title": "Smart Messaging Digital Employee",
+  "slogan": "Un modèle qui tourne réellement sur votre propre ordinateur",
+  "subtitle": "Livré avec le modèle local Qwen3.5 par défaut, avec IA conversationnelle, planification de tâches, génération de contenu, orchestration d'outils et support de messagerie.",
   "inputPlaceholder": "Décrivez une tâche et laissez l'IA s'en charger",
   "plusMenu": {
     "addContent": "Ajouter du contenu",
@@ -63,15 +65,41 @@
       "prompt": "Parcourez les événements sur Eventbrite, filtrez par lieu et ajoutez les 5 meilleurs à mon calendrier."
     }
   },
+  "advantages": {
+    "offlineSafe": "Hors ligne sécurisé",
+    "scriptTools": "Outils de script",
+    "workflowOrchestration": "Orchestration de workflows",
+    "localMemory": "Mémoire locale"
+  },
+  "daemonDisconnectedPlaceholder": "Daemon non connecté...",
   "favorites": {
     "title": "Favoris",
+    "description": "Le Centre d'Applications comprend des applications prêtes à l'emploi telles que l'Auditeur d'Insights de Messages, le Responsable de Design Produit et le Responsable d'Étiquetage SMS, conçues pour des workflows spécifiques avec des capacités de script et d'orchestration renforcées.",
     "empty": "Marquez les tâches terminées ou interrompues comme favorites pour les voir ici.",
     "remove": "Retirer des favoris",
     "showAll": "Afficher les {{count}} favoris",
     "showAll_one": "Afficher {{count}} favori",
     "showAll_few": "Afficher les {{count}} favoris",
     "showAll_many": "Afficher les {{count}} favoris",
-    "showAll_other": "Afficher les {{count}} favoris"
+    "showAll_other": "Afficher les {{count}} favoris",
+    "cardType": "APPLI RAPIDE",
+    "launch": "Appuyez pour lancer",
+    "businessTag": "APPLI MÉTIER",
+    "comingSoon": "Prêt pour la production",
+    "apps": {
+      "messageAuditor": {
+        "title": "Auditeur d'Insights de Messages",
+        "description": "Conçu pour la revue de messages, la vérification de contenu et la détection de risques dans les workflows d'inspection de messages."
+      },
+      "productDesigner": {
+        "title": "Responsable de Design Produit",
+        "description": "Axé sur la conception de produits, la structuration de contenu et la génération pour des workflows créatifs plus complexes."
+      },
+      "smsLabeler": {
+        "title": "Responsable d'Étiquetage SMS",
+        "description": "Conçu pour l'étiquetage SMS, la classification et l'orchestration de règles avec des capacités de script renforcées."
+      }
+    }
   },
   "selectFolder": "Sélectionner un dossier",
   "selectedFolder": {

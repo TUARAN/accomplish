@@ -142,7 +142,9 @@ export function buildHuggingFaceLocalConfig(ctx: ProviderBuildContext): Provider
 
   const modelId = hfProvider.selectedModelId.replace(/^huggingface-local\//, '');
   const baseURL = `http://127.0.0.1:${hfConfig.serverPort}/v1`;
-  log.info(`[OpenCode Config Builder] HuggingFace Local configured: ${modelId} baseURL: ${baseURL}`);
+  log.info(
+    `[OpenCode Config Builder] HuggingFace Local configured: ${modelId} baseURL: ${baseURL}`,
+  );
 
   return {
     configs: [

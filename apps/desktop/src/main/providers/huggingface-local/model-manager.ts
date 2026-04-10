@@ -16,10 +16,7 @@ import {
   getWritableHfCachePath,
   hasCachedModel,
 } from './model-paths';
-import {
-  downloadModel as downloadModelInternal,
-  type ProgressCallback,
-} from './model-downloader';
+import { downloadModel as downloadModelInternal, type ProgressCallback } from './model-downloader';
 
 export type { DownloadProgress, ProgressCallback } from './model-downloader';
 export { cancelDownload } from './model-downloader';

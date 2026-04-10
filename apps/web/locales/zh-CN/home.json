@@ -1,7 +1,15 @@
 {
   "title": "智能消息数字员工",
-  "subtitle": "默认搭载 Qwen3.5-0.8B 本地大模型，具备智能对话、任务拆解、内容生成与消息处理能力。",
+  "slogan": "真正在自己电脑上运行的大模型",
+  "subtitle": "默认搭载 Qwen3.5 本地大模型，具备智能对话、任务拆解、内容生成、工具调度与消息处理能力。",
+  "advantages": {
+    "offlineSafe": "离线安全",
+    "scriptTools": "脚本工具",
+    "workflowOrchestration": "流程编排",
+    "localMemory": "本地记忆"
+  },
   "inputPlaceholder": "来自于开源项目 xx",
+  "daemonDisconnectedPlaceholder": "Daemon 未连接...",
   "favorites": {
     "title": "应用中心",
     "description": "面向具体场景设计，具备更强的脚本工具能力与流程编排能力。",

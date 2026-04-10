@@ -42,6 +42,12 @@ export function HomePage() {
     handleOpenSettings,
     MAX_FILES,
   } = useHomePage();
+  const advantages = [
+    t('advantages.offlineSafe'),
+    t('advantages.scriptTools'),
+    t('advantages.workflowOrchestration'),
+    t('advantages.localMemory'),
+  ];
 
   return (
     <>
@@ -55,12 +61,23 @@ export function HomePage() {
       <div className="h-full flex flex-col bg-accent relative overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 pb-0">
           <div className="w-full max-w-[720px] mx-auto flex flex-col items-center gap-3">
+            <motion.div
+              initial={{ opacity: 0, y: -24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.gentle, delay: 0.02 }}
+              className="pt-[156px]"
+            >
+              <p className="text-center text-[18px] font-medium tracking-[0.04em] text-foreground/60">
+                “{t('slogan')}”
+              </p>
+            </motion.div>
+
             <motion.h1
               data-testid="home-title"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={springs.gentle}
-              className="font-apparat text-[32px] tracking-[-0.015em] text-foreground w-full text-center pt-[250px]"
+              className="font-apparat text-[32px] tracking-[-0.015em] text-foreground w-full text-center"
             >
               {t('title')}
             </motion.h1>
@@ -75,6 +92,22 @@ export function HomePage() {
             </motion.p>
 
             <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...springs.gentle, delay: 0.08 }}
+              className="flex w-full flex-wrap items-center justify-center gap-2"
+            >
+              {advantages.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-border/70 bg-background/85 px-3 py-1 text-[12px] font-medium tracking-[0.02em] text-foreground/80 shadow-sm"
+                >
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...springs.gentle, delay: 0.1 }}
@@ -86,7 +119,9 @@ export function HomePage() {
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
                 disabled={!isDaemonReady}
-                placeholder={isDaemonReady ? t('inputPlaceholder') : 'Daemon not connected...'}
+                placeholder={
+                  isDaemonReady ? t('inputPlaceholder') : t('daemonDisconnectedPlaceholder')
+                }
                 typingPlaceholder={true}
                 large={true}
                 autoFocus={true}

@@ -12,6 +12,20 @@
   "close": "Fermer",
   "confirmDelete": "Voulez-vous vraiment supprimer cette tâche ?",
   "deleteTask": "Supprimer la tâche",
+  "workspace": {
+    "default": "Par défaut",
+    "manage": "Gérer les espaces de travail..."
+  },
+  "status": {
+    "pending": "En attente",
+    "queued": "En file d'attente",
+    "running": "En cours",
+    "waiting_permission": "En attente d'approbation",
+    "completed": "Terminé",
+    "failed": "Échoué",
+    "cancelled": "Annulé",
+    "interrupted": "Interrompu"
+  },
   "favorite": {
     "add": "Ajouter aux favoris",
     "remove": "Retirer des favoris"

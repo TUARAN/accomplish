@@ -1,7 +1,15 @@
 {
   "title": "Smart Messaging Digital Employee",
-  "subtitle": "Ships with the local Qwen3.5-0.8B model by default, with conversational AI, task planning, content generation, and messaging support.",
+  "slogan": "A model that truly runs on your own computer",
+  "subtitle": "Ships with the local Qwen3.5 model by default, with conversational AI, task planning, content generation, tool orchestration, and messaging support.",
+  "advantages": {
+    "offlineSafe": "Offline-safe",
+    "scriptTools": "Script tools",
+    "workflowOrchestration": "Workflow orchestration",
+    "localMemory": "Local memory"
+  },
   "inputPlaceholder": "Built from open-source project xx",
+  "daemonDisconnectedPlaceholder": "Daemon not connected...",
   "favorites": {
     "title": "Application Center",
     "description": "The Application Center includes business-ready apps such as Message Insight Auditor, Product Design Officer, and SMS Labeling Officer, designed for specific workflows with stronger scripting and orchestration capabilities.",

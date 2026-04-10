@@ -79,11 +79,14 @@ export async function buildEnvironment(
     ollamaHost = selectedModel.baseUrl;
   }
   const hfProvider =
-    activeModel?.provider === 'huggingface-local' || selectedModel?.provider === 'huggingface-local';
+    activeModel?.provider === 'huggingface-local' ||
+    selectedModel?.provider === 'huggingface-local';
   if (hfProvider) {
     const hfConfig = storage.getHuggingFaceLocalConfig();
     if (!hfConfig?.serverPort) {
-      throw new Error('HuggingFace Local server is not running. Please start the local model first.');
+      throw new Error(
+        'HuggingFace Local server is not running. Please start the local model first.',
+      );
     }
     openAiBaseUrl = `http://127.0.0.1:${hfConfig.serverPort}/v1`;
   }
