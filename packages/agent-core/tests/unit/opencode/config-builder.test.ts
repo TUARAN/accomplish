@@ -5,6 +5,7 @@ import { buildProviderConfigs } from '../../../src/opencode/config-builder.js';
 vi.mock('../../../src/storage/repositories/index.js', () => ({
   getOllamaConfig: () => null,
   getLMStudioConfig: () => null,
+  getHuggingFaceLocalConfig: () => null,
   getProviderSettings: () => ({
     connectedProviders: {},
   }),

@@ -1,3 +1,4 @@
+import http from 'http';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   transformRequestBody,
@@ -8,12 +9,41 @@ import {
 
 describe('Azure Foundry Proxy', () => {
   beforeEach(() => {
+    let errorHandler: ((error: NodeJS.ErrnoException) => void) | undefined;
+    const mockServer = {
+      listening: false,
+      once: vi.fn((event: string, handler: (error: NodeJS.ErrnoException) => void) => {
+        if (event === 'error') {
+          errorHandler = handler;
+        }
+        return mockServer;
+      }),
+      listen: vi.fn((port: number, host: string, callback?: () => void) => {
+        void port;
+        void host;
+        if (process.env.AZURE_FOUNDRY_PROXY_TEST_ERROR === 'EADDRINUSE' && errorHandler) {
+          errorHandler(Object.assign(new Error('Address in use'), { code: 'EADDRINUSE' }));
+          return mockServer;
+        }
+        mockServer.listening = true;
+        callback?.();
+        return mockServer;
+      }),
+      close: vi.fn((callback?: (err?: Error) => void) => {
+        mockServer.listening = false;
+        callback?.();
+        return mockServer;
+      }),
+    } as unknown as http.Server;
+
+    vi.spyOn(http, 'createServer').mockReturnValue(mockServer);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(async () => {
+    delete process.env.AZURE_FOUNDRY_PROXY_TEST_ERROR;
     vi.restoreAllMocks();
     // Clean up any running proxy
     await stopAzureFoundryProxy();

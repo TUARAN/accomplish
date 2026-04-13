@@ -1,22 +1,38 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // We test the proxy-agent selection logic by mocking the environment
 // and observing which dispatcher is passed to global fetch.
 
 describe('fetchWithTimeout proxy support', () => {
-  afterEach(() => {
-    // Clean up env vars set during tests
-    for (const key of [
-      'HTTPS_PROXY',
-      'https_proxy',
-      'HTTP_PROXY',
-      'http_proxy',
-      'ALL_PROXY',
-      'all_proxy',
-      'NO_PROXY',
-      'no_proxy',
-    ]) {
+  const proxyEnvKeys = [
+    'HTTPS_PROXY',
+    'https_proxy',
+    'HTTP_PROXY',
+    'http_proxy',
+    'ALL_PROXY',
+    'all_proxy',
+    'NO_PROXY',
+    'no_proxy',
+  ] as const;
+  let originalEnv: Partial<Record<(typeof proxyEnvKeys)[number], string | undefined>> = {};
+
+  beforeEach(() => {
+    originalEnv = {};
+    for (const key of proxyEnvKeys) {
+      originalEnv[key] = process.env[key];
       delete process.env[key];
+    }
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    for (const key of proxyEnvKeys) {
+      const value = originalEnv[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
     }
     vi.restoreAllMocks();
   });
@@ -39,8 +55,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    // Re-import to pick up the new env var
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('https://api.example.com/test', {}, 5000);
@@ -56,7 +70,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('https://api.example.com/v1/models', {}, 5000);
@@ -71,7 +84,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('https://api.example.com/test', {}, 5000);
@@ -87,7 +99,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('http://api.example.com/test', {}, 5000);
@@ -107,7 +118,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('https://api.internal.example.com/test', {}, 5000);
@@ -123,7 +133,6 @@ describe('fetchWithTimeout proxy support', () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
 
-    vi.resetModules();
     const { fetchWithTimeout } = await import('../../../src/utils/fetch.js');
 
     await fetchWithTimeout('https://api.internal.example.com/test', {}, 5000);
