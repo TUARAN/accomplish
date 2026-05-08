@@ -10,6 +10,8 @@ import {
 // Mock http so tests don't bind a real TCP port
 class MockHttpServer {
   listening = false;
+  /** Tracks the port passed to `listen()` so `address()` can echo it back. */
+  private _listeningPort = 0;
   private _errorHandler?: (err: Error) => void;
 
   once(event: string, callback: (err?: Error) => void) {
@@ -24,10 +26,27 @@ class MockHttpServer {
     this._errorHandler?.(err);
   }
 
-  listen(_port: number, _host: string, callback: () => void) {
+  listen(port: number, _host: string, callback: () => void) {
     this.listening = true;
+    // When `port === 0` the real http.Server picks a random ephemeral port.
+    // Mirror that here with a stable sentinel so tests can assert against it
+    // without binding a real socket.
+    this._listeningPort = port === 0 ? 54321 : port;
     callback();
     return this;
+  }
+
+  /**
+   * Mock `address()` so production's `getListeningPort()` works against this
+   * fake server. The real http.Server returns either an `AddressInfo` object,
+   * a string (for unix sockets), or `null` (when not listening); we only need
+   * the AddressInfo branch here.
+   */
+  address(): { address: string; family: string; port: number } | null {
+    if (!this.listening) {
+      return null;
+    }
+    return { address: '127.0.0.1', family: 'IPv4', port: this._listeningPort };
   }
 
   close(callback?: (err?: Error) => void) {

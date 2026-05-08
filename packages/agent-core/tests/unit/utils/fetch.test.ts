@@ -1,21 +1,33 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // We test the proxy-agent selection logic by mocking the environment
 // and observing which dispatcher is passed to global fetch.
 
+const PROXY_ENV_KEYS = [
+  'HTTPS_PROXY',
+  'https_proxy',
+  'HTTP_PROXY',
+  'http_proxy',
+  'ALL_PROXY',
+  'all_proxy',
+  'NO_PROXY',
+  'no_proxy',
+] as const;
+
 describe('fetchWithTimeout proxy support', () => {
+  // Reset proxy env vars in BOTH beforeEach and afterEach. Without the
+  // beforeEach reset the suite inherits whatever proxy is configured in the
+  // developer's shell (e.g. HTTPS_PROXY pointing at a local proxy), which
+  // makes the "passes no dispatcher when no proxy env vars are set" case
+  // fail on machines that do route traffic through a proxy.
+  beforeEach(() => {
+    for (const key of PROXY_ENV_KEYS) {
+      delete process.env[key];
+    }
+  });
+
   afterEach(() => {
-    // Clean up env vars set during tests
-    for (const key of [
-      'HTTPS_PROXY',
-      'https_proxy',
-      'HTTP_PROXY',
-      'http_proxy',
-      'ALL_PROXY',
-      'all_proxy',
-      'NO_PROXY',
-      'no_proxy',
-    ]) {
+    for (const key of PROXY_ENV_KEYS) {
       delete process.env[key];
     }
     vi.restoreAllMocks();

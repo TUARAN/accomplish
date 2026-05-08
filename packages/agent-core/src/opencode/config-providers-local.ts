@@ -7,7 +7,7 @@ import type { ProviderBuildContext, ProviderBuildResult } from './config-provide
 const log = createConsoleLogger({ prefix: 'OpenCodeConfigBuilder' });
 
 export async function buildOllamaConfig(ctx: ProviderBuildContext): Promise<ProviderBuildResult> {
-  const { providerSettings } = ctx;
+  const { providerSettings, activeModel } = ctx;
   const ollamaProvider = providerSettings.connectedProviders.ollama;
   if (
     ollamaProvider?.connectionStatus === 'connected' &&
@@ -23,6 +23,15 @@ export async function buildOllamaConfig(ctx: ProviderBuildContext): Promise<Prov
     log.info(
       `[OpenCode Config Builder] Ollama configured: ${modelId} (tools: ${ollamaSupportsTools})`,
     );
+    // Pin OpenCode's `model` + `small_model` to the selected Ollama model so a
+    // local-only setup actually routes prompts to Ollama. Without this, the
+    // generated `opencode.json` had no `model` field and OpenCode fell back to
+    // its built-in default (Anthropic) — small Ollama models like llama3.2:1b
+    // never got called and the user saw an Anthropic-API auth error instead.
+    const overrideModel =
+      activeModel?.provider === 'ollama' && activeModel.model
+        ? activeModel.model
+        : `ollama/${modelId}`;
     return {
       configs: [
         {
@@ -37,6 +46,7 @@ export async function buildOllamaConfig(ctx: ProviderBuildContext): Promise<Prov
         },
       ],
       enableToAdd: [],
+      modelOverride: { model: overrideModel, smallModel: overrideModel },
     };
   }
 
@@ -52,6 +62,13 @@ export async function buildOllamaConfig(ctx: ProviderBuildContext): Promise<Prov
       models[`ollama/${model.id}`] = { name: model.displayName, tools: legacyToolSupport };
     }
     log.info(`[OpenCode Config Builder] Ollama (legacy) configured: ${Object.keys(models)}`);
+    // Same rationale as the connected-provider branch above: when only Ollama
+    // is configured, default OpenCode to the active legacy model (or the first
+    // registered one) so it does not fall back to Anthropic.
+    const legacyOverrideModel =
+      activeModel?.provider === 'ollama' && activeModel.model
+        ? activeModel.model
+        : `ollama/${ollamaModels[0].id}`;
     return {
       configs: [
         {
@@ -63,13 +80,14 @@ export async function buildOllamaConfig(ctx: ProviderBuildContext): Promise<Prov
         },
       ],
       enableToAdd: [],
+      modelOverride: { model: legacyOverrideModel, smallModel: legacyOverrideModel },
     };
   }
   return { configs: [], enableToAdd: [] };
 }
 
 export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<ProviderBuildResult> {
-  const { providerSettings } = ctx;
+  const { providerSettings, activeModel } = ctx;
   const lmstudioProvider = providerSettings.connectedProviders.lmstudio;
   if (
     lmstudioProvider?.connectionStatus === 'connected' &&
@@ -84,6 +102,14 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
     log.info(
       `[OpenCode Config Builder] LM Studio configured: ${modelId} (tools: ${supportsTools})`,
     );
+    // Same rationale as Ollama above: pin OpenCode's `model` + `small_model`
+    // to the selected LM Studio model. Without this the generated config has
+    // no `model`, OpenCode silently falls back to the Anthropic default, and
+    // small local LM Studio models never get called.
+    const overrideModel =
+      activeModel?.provider === 'lmstudio' && activeModel.model
+        ? activeModel.model
+        : `lmstudio/${modelId}`;
     return {
       configs: [
         {
@@ -95,6 +121,7 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
         },
       ],
       enableToAdd: ['lmstudio'],
+      modelOverride: { model: overrideModel, smallModel: overrideModel },
     };
   }
 
@@ -107,6 +134,10 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
       models[model.id] = { name: model.name, tools: model.toolSupport === 'supported' };
     }
     log.info(`[OpenCode Config Builder] LM Studio (legacy) configured: ${Object.keys(models)}`);
+    const legacyOverrideModel =
+      activeModel?.provider === 'lmstudio' && activeModel.model
+        ? activeModel.model
+        : `lmstudio/${lmstudioModels[0].id}`;
     return {
       configs: [
         {
@@ -118,6 +149,7 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
         },
       ],
       enableToAdd: ['lmstudio'],
+      modelOverride: { model: legacyOverrideModel, smallModel: legacyOverrideModel },
     };
   }
   return { configs: [], enableToAdd: [] };

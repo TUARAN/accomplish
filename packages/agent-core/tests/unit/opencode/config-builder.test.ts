@@ -124,4 +124,68 @@ describe('buildProviderConfigs', () => {
       expect(googleConfig).toBeUndefined();
     });
   });
+
+  describe('Local providers (Ollama, LM Studio)', () => {
+    // Regression: when only Ollama/LM Studio is configured, the generated
+    // OpenCode config used to omit `model` / `small_model`, which made
+    // OpenCode fall back to its built-in Anthropic default and break with an
+    // auth error. The local builders must surface a `modelOverride` so the
+    // selected local model is actually used at run time.
+    it('returns a modelOverride pointing at the selected Ollama model', async () => {
+      const result = await buildProviderConfigs({
+        getApiKey: () => undefined,
+        providerSettings: {
+          connectedProviders: {
+            ollama: {
+              providerId: 'ollama',
+              connectionStatus: 'connected',
+              selectedModelId: 'ollama/llama3.2:1b',
+              credentials: { type: 'ollama', serverUrl: 'http://localhost:11434' },
+              availableModels: [
+                { id: 'ollama/llama3.2:1b', name: 'llama3.2:1b', toolSupport: 'supported' },
+              ],
+            },
+          },
+        } as never,
+      });
+
+      expect(result.modelOverride).toEqual({
+        model: 'ollama/llama3.2:1b',
+        smallModel: 'ollama/llama3.2:1b',
+      });
+      const ollamaConfig = result.providerConfigs.find((p) => p.id === 'ollama');
+      expect(ollamaConfig?.options?.baseURL).toBe('http://localhost:11434/v1');
+    });
+
+    it('returns a modelOverride pointing at the selected LM Studio model', async () => {
+      const result = await buildProviderConfigs({
+        getApiKey: () => undefined,
+        providerSettings: {
+          connectedProviders: {
+            lmstudio: {
+              providerId: 'lmstudio',
+              connectionStatus: 'connected',
+              selectedModelId: 'lmstudio/qwen2.5-1.5b-instruct',
+              credentials: { type: 'lmstudio', serverUrl: 'http://localhost:1234' },
+              availableModels: [
+                {
+                  id: 'lmstudio/qwen2.5-1.5b-instruct',
+                  name: 'Qwen2.5 1.5B Instruct',
+                  toolSupport: 'supported',
+                },
+              ],
+            },
+          },
+        } as never,
+      });
+
+      expect(result.modelOverride).toEqual({
+        model: 'lmstudio/qwen2.5-1.5b-instruct',
+        smallModel: 'lmstudio/qwen2.5-1.5b-instruct',
+      });
+      const lmstudioConfig = result.providerConfigs.find((p) => p.id === 'lmstudio');
+      expect(lmstudioConfig?.options?.baseURL).toBe('http://localhost:1234/v1');
+      expect(result.enabledProviders).toContain('lmstudio');
+    });
+  });
 });
