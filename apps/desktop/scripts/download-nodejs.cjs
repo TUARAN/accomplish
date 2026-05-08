@@ -1,12 +1,15 @@
 /**
  * Download Node.js standalone binaries for bundling with the Electron app.
  *
- * Downloads Node.js v20.18.1 for:
- * - macOS x64
- * - macOS arm64
- * - Windows x64
+ * The target version and per-platform archive metadata live in
+ * ./node-version.cjs — the single source of truth shared with after-pack.cjs.
  *
- * Usage: node scripts/download-nodejs.cjs
+ * Supported targets:
+ * - darwin-x64, darwin-arm64
+ * - linux-x64, linux-arm64
+ * - win32-x64
+ *
+ * Usage: node scripts/download-nodejs.cjs [--platform=<name>]
  */
 
 const https = require('https');
@@ -15,41 +18,8 @@ const path = require('path');
 const { execSync } = require('child_process');
 const crypto = require('crypto');
 
-const NODE_VERSION = '20.18.1';
+const { NODE_VERSION, PLATFORMS } = require('./node-version.cjs');
 const BASE_URL = `https://nodejs.org/dist/v${NODE_VERSION}`;
-
-const PLATFORMS = [
-  {
-    name: 'darwin-x64',
-    file: `node-v${NODE_VERSION}-darwin-x64.tar.gz`,
-    extract: 'tar',
-    sha256: 'c5497dd17c8875b53712edaf99052f961013cedc203964583fc0cfc0aaf93581',
-  },
-  {
-    name: 'darwin-arm64',
-    file: `node-v${NODE_VERSION}-darwin-arm64.tar.gz`,
-    extract: 'tar',
-    sha256: '9e92ce1032455a9cc419fe71e908b27ae477799371b45a0844eedb02279922a4',
-  },
-  {
-    name: 'linux-x64',
-    file: `node-v${NODE_VERSION}-linux-x64.tar.gz`,
-    extract: 'tar',
-    sha256: '259e5a8bf2e15ecece65bd2a47153262eda71c0b2c9700d5e703ce4951572784',
-  },
-  {
-    name: 'linux-arm64',
-    file: `node-v${NODE_VERSION}-linux-arm64.tar.gz`,
-    extract: 'tar',
-    sha256: '73cd297378572e0bc9dfc187c5ec8cca8d43aee6a596c10ebea1ed5f9ec682b6',
-  },
-  {
-    name: 'win32-x64',
-    file: `node-v${NODE_VERSION}-win-x64.zip`,
-    extract: 'zip',
-    sha256: '56e5aacdeee7168871721b75819ccacf2367de8761b78eaceacdecd41e04ca03',
-  },
-];
 
 const platformFlag = process.argv.find((a) => a.startsWith('--platform='));
 const hasPlatformFlag = Boolean(platformFlag);

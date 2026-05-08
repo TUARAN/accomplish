@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { shell } from 'electron';
-import { generateOpenCodeConfig } from '../config-generator';
 import {
   discoverOAuthMetadata,
   discoverOAuthProtectedResourceMetadata,
@@ -16,7 +15,7 @@ import {
   OPENCODE_SLACK_MCP_CALLBACK_HOST,
   OPENCODE_SLACK_MCP_CALLBACK_PORT,
   OPENCODE_SLACK_MCP_CALLBACK_PATH,
-} from '@accomplish_ai/agent-core';
+} from '@accomplish_ai/agent-core/desktop-main';
 import { createOAuthCallbackServer, type OAuthCallbackServer } from '../../oauth-callback-server';
 import { AuthLoginError } from '../auth-login-error';
 
@@ -36,8 +35,11 @@ export class SlackMcpOAuthFlow {
     let callbackServer: OAuthCallbackServer | null = null;
 
     try {
-      await generateOpenCodeConfig();
-
+      // Phase 4b of the OpenCode SDK cutover port removed the pre-emptive
+      // `generateOpenCodeConfig()` call here. Under the SDK architecture the
+      // daemon owns task-runtime config generation and writes it lazily when
+      // a task starts; pre-staging an `opencode.json` from the desktop main
+      // process is no longer required for the Slack OAuth handshake itself.
       const metadata = await discoverOAuthMetadata(OPENCODE_SLACK_MCP_SERVER_URL);
       const resourceMetadata = await discoverOAuthProtectedResourceMetadata(
         OPENCODE_SLACK_MCP_SERVER_URL,

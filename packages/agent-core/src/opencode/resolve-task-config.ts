@@ -2,20 +2,24 @@
  * Shared task config resolution — the "one brain" for config assembly.
  *
  * Resolves skills, connectors (with token refresh), cloud browser config,
- * workspace knowledge notes, and OpenAI store:false injection into a
- * ConfigGeneratorOptions object that can be passed to generateConfig().
+ * workspace knowledge notes, Google Workspace accounts, and OpenAI
+ * store:false injection into a ConfigGeneratorOptions object that can be
+ * passed to generateConfig().
  *
  * Used by both the desktop config-generator (bridge period) and the
  * standalone daemon's TaskService.
  */
 
+import type { Database } from 'better-sqlite3';
 import type { StorageAPI } from '../types/storage.js';
 import type { Skill } from '../common/types/skills.js';
 import type { ConfigGeneratorOptions, ProviderConfig } from './config-generator.js';
 import type { BrowserConfig } from './generator-mcp.js';
+import type { AccomplishRuntime, StorageDeps } from './accomplish-runtime.js';
 import { isTokenExpired, refreshAccessToken } from '../connectors/oauth-tokens.js';
-import { getKnowledgeNotesForPrompt } from '../storage/repositories/knowledgeNotes.js';
+import { getFormattedKnowledgeNotes } from '../storage/repositories/knowledgeNotes.js';
 import { buildProviderConfigs } from './config-builder.js';
+import { prepareGwsManifest, type LogFn } from '../google-accounts/index.js';
 
 export interface ResolveTaskConfigOptions {
   /** Storage API for reading connectors, cloud browser, sandbox, etc. */
@@ -34,9 +38,8 @@ export interface ResolveTaskConfigOptions {
   /** Optional Azure Foundry token for Entra ID auth */
   azureFoundryToken?: string;
 
-  /** Permission and question API ports */
-  permissionApiPort?: number;
-  questionApiPort?: number;
+  /** Port for the WhatsApp HTTP API. Omit to disable the MCP tool. */
+  whatsappApiPort?: number;
 
   /** Optional auth token for daemon API endpoints */
   authToken?: string;
@@ -55,10 +58,44 @@ export interface ResolveTaskConfigOptions {
   workspaceId?: string;
 
   /**
+   * Optional per-task config filename (e.g. `opencode-<taskId>.json`).
+   * When concurrent tasks run simultaneously, sharing the default
+   * `opencode.json` makes them race on the same file. The daemon passes
+   * a taskId-scoped filename; desktop can omit to keep legacy behavior.
+   */
+  configFileName?: string;
+
+  /**
+   * Accomplish AI runtime adapter (noop in OSS, real impl in commercial).
+   * Forwarded into `buildProviderConfigs` so the Accomplish-AI provider can
+   * register itself when the runtime is available.
+   */
+  accomplishRuntime?: AccomplishRuntime;
+
+  /**
+   * Accomplish AI identity storage deps (injected from the caller's
+   * secure storage). Forwarded into `buildProviderConfigs`.
+   */
+  accomplishStorageDeps?: StorageDeps;
+
+  /**
+   * Optional SQLite handle for GWS manifest generation. The daemon passes
+   * its shared database; desktop omits (its own config-generator calls
+   * `prepareGwsManifest` separately with its own AccountManager).
+   *
+   * When provided AND the `google_accounts` table has `status='connected'`
+   * rows, `resolveTaskConfig` writes per-account token files + a manifest
+   * and sets `gwsAccountsManifestPath` + `gwsAccountsSummary` on the
+   * returned configOptions. If the table is missing (pre-migration DB) or
+   * empty, this step silently skips.
+   */
+  database?: Database;
+
+  /**
    * Logger function for non-fatal warnings.
    * Defaults to console.warn if not provided.
    */
-  log?: (level: 'INFO' | 'WARN' | 'ERROR', message: string, data?: Record<string, unknown>) => void;
+  log?: LogFn;
 }
 
 export interface ResolvedTaskConfig {
@@ -84,19 +121,26 @@ export async function resolveTaskConfig(
     bundledNodeBinPath,
     getApiKey,
     azureFoundryToken,
-    permissionApiPort,
-    questionApiPort,
+    whatsappApiPort,
     authToken,
     skills,
     workspaceId,
+    configFileName,
+    accomplishRuntime,
+    accomplishStorageDeps,
+    database,
   } = options;
 
-  const log = options.log ?? ((_level: string, msg: string) => console.warn(msg));
+  const log: LogFn = options.log ?? ((_level, msg) => console.warn(msg));
 
-  // 1. Build provider configs
+  // 1. Build provider configs. `accomplishRuntime` + `accomplishStorageDeps`
+  // forward to the Accomplish-AI provider when the optional runtime is loaded
+  // (Free build); omitted on OSS so the provider stays dormant.
   const { providerConfigs, enabledProviders, modelOverride } = await buildProviderConfigs({
     getApiKey,
     azureFoundryToken,
+    accomplishRuntime,
+    accomplishStorageDeps,
   });
 
   // 2. Inject store:false for OpenAI to prevent 403 errors with project-scoped keys
@@ -108,19 +152,59 @@ export async function resolveTaskConfig(
   // 4. Resolve cloud browser config
   const browser = resolveCloudBrowser(storage);
 
-  // 5. Resolve workspace knowledge notes
-  let knowledgeNotes: string | undefined;
+  // 5. Resolve workspace knowledge notes — split into binding instructions
+  //    (rendered under a MANDATORY wrapper) and soft context (rendered under
+  //    a "background info" wrapper). Per the post-review fix for Codex P2,
+  //    instruction-type notes must be framed as persistent user instructions
+  //    that override conversational-bypass default-concise behavior.
+  let knowledgeInstructions: string | undefined;
+  let knowledgeContext: string | undefined;
   if (workspaceId) {
     try {
-      const formatted = getKnowledgeNotesForPrompt(workspaceId);
-      if (formatted) {
-        knowledgeNotes = formatted;
-      }
+      const formatted = getFormattedKnowledgeNotes(workspaceId);
+      if (formatted.instructions) knowledgeInstructions = formatted.instructions;
+      if (formatted.context) knowledgeContext = formatted.context;
     } catch (error) {
       log('WARN', '[resolveTaskConfig] Failed to load workspace knowledge notes', {
         workspaceId,
         err: String(error),
       });
+    }
+  }
+
+  // 6. Resolve UI language preference for agent communication
+  /** UI language preference read from app_settings; undefined if the column is absent (pre-migration DB). */
+
+  let language: string | undefined;
+  try {
+    language = storage.getLanguage();
+    if (typeof language === 'string' && language.trim().length === 0) {
+      language = undefined;
+    }
+  } catch (_err) {
+    // Non-critical: language column may be absent in older DBs before migration
+  }
+
+  // 7. Resolve Google Workspace accounts manifest (daemon only — desktop's
+  // config-generator calls `prepareGwsManifest` separately via its own
+  // `AccountManager`). When the caller omits `database`, we skip this step.
+  let gwsAccountsManifestPath: string | undefined;
+  let gwsAccountsSummary: Array<{ label: string; email: string; status: string }> | undefined;
+  if (database) {
+    try {
+      const gwsResult = await prepareGwsManifest(storage, database, userDataPath, log);
+      if (gwsResult?.manifestPath) {
+        gwsAccountsManifestPath = gwsResult.manifestPath;
+      }
+      if (gwsResult?.summary && gwsResult.summary.length > 0) {
+        gwsAccountsSummary = gwsResult.summary.map((s) => ({
+          label: s.label,
+          email: s.email,
+          status: s.status,
+        }));
+      }
+    } catch (err) {
+      log('WARN', '[resolveTaskConfig] GWS manifest step failed', { err: String(err) });
     }
   }
 
@@ -134,14 +218,18 @@ export async function resolveTaskConfig(
       skills,
       providerConfigs,
       enabledProviders,
-      permissionApiPort,
-      questionApiPort,
+      whatsappApiPort,
       authToken,
       model: modelOverride?.model,
       smallModel: modelOverride?.smallModel,
       connectors: connectors.length > 0 ? connectors : undefined,
       browser,
-      knowledgeNotes,
+      knowledgeInstructions,
+      knowledgeContext,
+      language,
+      configFileName,
+      gwsAccountsManifestPath,
+      gwsAccountsSummary,
     },
   };
 }

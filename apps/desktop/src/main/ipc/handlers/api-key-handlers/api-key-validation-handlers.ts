@@ -1,15 +1,19 @@
 import type { IpcMainInvokeEvent } from 'electron';
-import { validateApiKey, validateAzureFoundry, sanitizeString } from '@accomplish_ai/agent-core';
+import {
+  validateApiKey,
+  validateAzureFoundry,
+  sanitizeString,
+} from '@accomplish_ai/agent-core/desktop-main';
 import {
   ALLOWED_API_KEY_PROVIDERS,
   STANDARD_VALIDATION_PROVIDERS,
-} from '@accomplish_ai/agent-core';
-import type { ZaiRegion } from '@accomplish_ai/agent-core';
+} from '@accomplish_ai/agent-core/desktop-main';
+import type { ZaiRegion } from '@accomplish_ai/agent-core/desktop-main';
 import { storeApiKey, getApiKey, deleteApiKey, hasAnyApiKey } from '../../../store/secureStorage';
-import { getStorage } from '../../../store/storage';
+import { getDaemonClient } from '../../../daemon-bootstrap';
 import { getLogCollector } from '../../../logging';
-import { getOpenAiOauthStatus } from '@accomplish_ai/agent-core';
 import { handle, API_KEY_VALIDATION_TIMEOUT_MS } from '../utils';
+import { ensureDaemonRunning } from '../../../daemon/daemon-connector';
 
 /**
  * Allowed shape of the `options` parameter for provider validation.
@@ -41,7 +45,9 @@ export function normalizeProviderOptions(
 }
 
 export function registerApiKeyValidationHandlers(): void {
-  const storage = getStorage();
+  // Milestone 5: OpenAI base URL and Azure Foundry config now come from
+  // the daemon. The validation flow pulls them in-line so each call gets
+  // a current snapshot without holding a stale reference.
 
   handle('api-key:exists', async (_event: IpcMainInvokeEvent) => {
     const apiKey = await getApiKey('anthropic');
@@ -54,7 +60,7 @@ export function registerApiKeyValidationHandlers(): void {
   });
 
   handle('api-key:get', async (_event: IpcMainInvokeEvent) => {
-    return getApiKey('anthropic');
+    return await getApiKey('anthropic');
   });
 
   handle('api-key:validate', async (_event: IpcMainInvokeEvent, key: string) => {
@@ -100,17 +106,30 @@ export function registerApiKeyValidationHandlers(): void {
           return { valid: false, error: e instanceof Error ? e.message : 'Invalid API key' };
         }
 
+        // OpenAI-compatible providers fall back to the user-configured
+        // base URL when the renderer didn't supply one in `options`. The
+        // URL lives in the daemon's app-settings (`settings.getOpenAiBaseUrl`).
+        let openAiBaseUrlFallback: string | undefined;
+        if (provider === 'openai') {
+          const rawBaseUrl = options?.baseUrl;
+          if (typeof rawBaseUrl === 'string' && rawBaseUrl.trim()) {
+            openAiBaseUrlFallback = rawBaseUrl.trim();
+          } else {
+            try {
+              const stored = await getDaemonClient().call('settings.getOpenAiBaseUrl');
+              openAiBaseUrlFallback = stored.trim() || undefined;
+            } catch {
+              openAiBaseUrlFallback = undefined;
+            }
+          }
+        }
+
         const result = await validateApiKey(
           provider as import('@accomplish_ai/agent-core').ProviderType,
           sanitizedKey,
           {
             timeout: API_KEY_VALIDATION_TIMEOUT_MS,
-            baseUrl:
-              provider === 'openai'
-                ? typeof options?.baseUrl === 'string'
-                  ? options.baseUrl.trim() || undefined
-                  : storage.getOpenAiBaseUrl().trim() || undefined
-                : undefined,
+            baseUrl: openAiBaseUrlFallback,
             zaiRegion: provider === 'zai' ? options?.zaiRegion || 'international' : undefined,
           },
         );
@@ -127,7 +146,7 @@ export function registerApiKeyValidationHandlers(): void {
       }
 
       if (provider === 'azure-foundry') {
-        const config = storage.getAzureFoundryConfig();
+        const config = await getDaemonClient().call('settings.getAzureFoundryConfig');
         const result = await validateAzureFoundry(config, {
           apiKey: key,
           baseUrl: typeof options?.baseUrl === 'string' ? options.baseUrl : undefined,
@@ -178,7 +197,12 @@ export function registerApiKeyValidationHandlers(): void {
     }
     const hasKey = await hasAnyApiKey();
     if (hasKey) return true;
-    return getOpenAiOauthStatus().connected;
+    // Phase 4a of the SDK cutover port: OAuth status is owned by the daemon.
+    // Route this check through `auth.openai.status` rather than reading the
+    // auth.json directly, so desktop and daemon agree on the status surface.
+    const client = await ensureDaemonRunning();
+    const status = await client.call('auth.openai.status');
+    return status.connected;
   });
 }
 

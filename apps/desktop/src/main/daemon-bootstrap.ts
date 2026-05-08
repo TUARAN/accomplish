@@ -7,8 +7,15 @@
  */
 
 import type { BrowserWindow } from 'electron';
-import type { DaemonClient } from '@accomplish_ai/agent-core';
-import { createSocketTransport } from '@accomplish_ai/agent-core';
+import type { DaemonClient } from '@accomplish_ai/agent-core/desktop-main';
+import { trackTaskComplete, trackTaskError, classifyErrorCategory } from './analytics/events';
+
+/** Per-task context for analytics — populated on task.start notification, consumed on complete/error. */
+const taskContextMap = new Map<
+  string,
+  { startTime: number; sessionId: string; taskType: string }
+>();
+import { createSocketTransport } from '@accomplish_ai/agent-core/desktop-main';
 import {
   ensureDaemonRunning,
   onReconnect,
@@ -36,6 +43,38 @@ function log(level: 'INFO' | 'WARN' | 'ERROR', msg: string): void {
 let windowGetter: (() => BrowserWindow | null) | null = null;
 
 /**
+ * Re-hydrate the `workspaceManager` cache and re-subscribe to
+ * `workspace.changed` notifications on the current `DaemonClient`.
+ *
+ * Idempotent no-op when the manager hasn't been initialized yet (the
+ * initial `app-startup.ts` bootstrap handles that path explicitly). Used
+ * by every code path that replaces the underlying client:
+ *   - `bootstrapDaemon()` on explicit `daemon:restart` / `daemon:start`
+ *     (review round 2 finding P2.A).
+ *   - `onReconnect` callback on automatic disconnect recovery (M5
+ *     review finding P2.2).
+ *
+ * Without this, the workspace cache stays attached to the old client's
+ * (now cleared) handler map and goes silently stale after any client
+ * swap — `workspace:list`, active workspace, and task filters drift.
+ */
+function rebindWorkspaceManager(): void {
+  void import('./store/workspaceManager')
+    .then((workspaceManager) => {
+      if (workspaceManager.isInitialized()) {
+        return workspaceManager.initialize();
+      }
+      return undefined;
+    })
+    .catch((err: unknown) => {
+      log(
+        'WARN',
+        `[DaemonBootstrap] workspaceManager rebind after client swap failed: ${String(err)}`,
+      );
+    });
+}
+
+/**
  * Boot the daemon — connect to existing or spawn a new one.
  * Returns the connected DaemonClient.
  */
@@ -60,6 +99,14 @@ export async function bootstrapDaemon(): Promise<DaemonClient> {
   // Set up disconnect detection + reconnection
   await setupTransportReconnection(client);
 
+  // Rebind the workspace-manager subscription on the new client. No-op
+  // for the initial startup (manager not initialized yet — `app-startup`
+  // calls `workspaceManager.initialize()` itself right after this);
+  // matters for explicit `daemon:restart` / `daemon:start` from the
+  // settings UI, where `bootstrapDaemon` creates a new client without
+  // going through the `onReconnect` callback.
+  rebindWorkspaceManager();
+
   // Register handler for when a new client replaces the old one after reconnect
   onReconnect(
     (state) => {
@@ -73,6 +120,10 @@ export async function bootstrapDaemon(): Promise<DaemonClient> {
       }
       // Set up disconnect detection on the new client
       void setupTransportReconnection(newClient);
+
+      // Same invariant as the initial bootstrap path: re-subscribe the
+      // workspace cache to the new client's notification stream.
+      rebindWorkspaceManager();
     },
   );
 
@@ -143,6 +194,14 @@ function registerNotificationHandlers(
   // Task execution events
   client.onNotification('task.progress', (data) => {
     forward('task:progress', data);
+    // Analytics: capture start time on first progress for this task
+    if (data.taskId && !taskContextMap.has(data.taskId)) {
+      taskContextMap.set(data.taskId, {
+        startTime: Date.now(),
+        sessionId: ((data as unknown as Record<string, unknown>).sessionId as string) ?? '',
+        taskType: 'chat',
+      });
+    }
   });
 
   client.onNotification('task.message', (data) => {
@@ -151,10 +210,38 @@ function registerNotificationHandlers(
 
   client.onNotification('task.complete', (data) => {
     forward('task:update', { taskId: data.taskId, type: 'complete', result: data.result });
+    // Analytics: track task completion with recovered context
+    try {
+      const ctx = taskContextMap.get(data.taskId);
+      const durationMs = ctx ? Date.now() - ctx.startTime : 0;
+      trackTaskComplete(
+        { taskId: data.taskId, sessionId: ctx?.sessionId ?? '', taskType: ctx?.taskType ?? 'chat' },
+        durationMs,
+        0, // totalSteps — not available in notification payload
+        false, // hadErrors
+      );
+      taskContextMap.delete(data.taskId);
+    } catch {
+      /* best-effort analytics */
+    }
   });
 
   client.onNotification('task.error', (data) => {
     forward('task:update', { taskId: data.taskId, type: 'error', error: data.error });
+    // Analytics: track task error with recovered context
+    try {
+      const ctx = taskContextMap.get(data.taskId);
+      const durationMs = ctx ? Date.now() - ctx.startTime : 0;
+      trackTaskError(
+        { taskId: data.taskId, sessionId: ctx?.sessionId ?? '', taskType: ctx?.taskType ?? 'chat' },
+        durationMs,
+        0, // totalSteps — not available in notification payload
+        classifyErrorCategory(data.error ?? 'unknown'),
+      );
+      taskContextMap.delete(data.taskId);
+    } catch {
+      /* best-effort analytics */
+    }
   });
 
   client.onNotification('task.statusChange', (data) => {
@@ -175,13 +262,16 @@ function registerNotificationHandlers(
     forward('todo:update', data);
   });
 
-  // Thought stream events
-  client.onNotification('task.thought', (data) => {
-    forward('task:thought', data);
+  // Connector auth-error (e.g., GitHub/Notion token expired). Renderer
+  // subscribes via `accomplish.onAuthError` in preload.
+  client.onNotification('auth.error', (data) => {
+    forward('auth:error', data);
   });
 
-  client.onNotification('task.checkpoint', (data) => {
-    forward('task:checkpoint', data);
+  // Browser preview frames from `dev-browser-mcp` tool output. Renderer
+  // subscribes via `accomplish.onBrowserFrame` in preload.
+  client.onNotification('browser.frame', (data) => {
+    forward('browser:frame', data);
   });
 
   // Accomplish AI credit usage updates (proxy → daemon → Electron → renderer)
@@ -196,5 +286,29 @@ function registerNotificationHandlers(
 
   client.onNotification('whatsapp.status', (data) => {
     forward('integrations:whatsapp:status', (data as { status: string }).status);
+  });
+
+  // Milestone 4 of the daemon-only-SQLite migration — daemon owns Google
+  // accounts + skills now, so status changes come through RPC
+  // notifications. The renderer channel name (`gws:account:status-changed`)
+  // stays identical to the pre-M4 `webContents.send(channel, id, status)`
+  // shape TokenManager used (preload subscribes with a two-positional
+  // listener); bypass `forward` so the two args get passed through as a
+  // varargs `webContents.send`, not collapsed into a single data payload.
+  client.onNotification('gwsAccount.statusChanged', (data) => {
+    const payload = data as { googleAccountId: string; status: string };
+    const win = getWindow();
+    if (!win || win.isDestroyed()) {
+      return;
+    }
+    try {
+      win.webContents.send('gws:account:status-changed', payload.googleAccountId, payload.status);
+    } catch {
+      // window torn down between check and send
+    }
+  });
+
+  client.onNotification('skills.changed', (data) => {
+    forward('skills:changed', data);
   });
 }

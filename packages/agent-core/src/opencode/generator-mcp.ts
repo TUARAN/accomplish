@@ -56,8 +56,8 @@ function resolveMcpCommand(
 export interface BuildMcpServersOptions {
   mcpToolsPath: string;
   nodeExe: string;
-  permissionApiPort: number;
-  questionApiPort: number;
+  /** Port for the WhatsApp HTTP API (daemon). Omit to disable the tool. */
+  whatsappApiPort?: number;
   browserConfig: BrowserConfig;
   /** Auth token for daemon HTTP APIs. MCP tools send this as Authorization header. */
   authToken?: string;
@@ -67,6 +67,11 @@ export interface BuildMcpServersOptions {
     url: string;
     accessToken: string;
   }>;
+  /**
+   * Path to GWS accounts manifest JSON. When set, gmail-mcp, calendar-mcp,
+   * and gws-mcp are registered and receive this path via GWS_ACCOUNTS_MANIFEST.
+   */
+  gwsAccountsManifestPath?: string;
 }
 
 /**
@@ -77,11 +82,11 @@ export function buildMcpServers(options: BuildMcpServersOptions): Record<string,
   const {
     mcpToolsPath,
     nodeExe,
-    permissionApiPort,
-    questionApiPort,
+    whatsappApiPort,
     browserConfig,
     authToken,
     connectors,
+    gwsAccountsManifestPath,
   } = options;
 
   // Auth env for daemon HTTP APIs — MCP tools send this as Authorization header
@@ -94,20 +99,6 @@ export function buildMcpServers(options: BuildMcpServersOptions): Record<string,
       type: 'remote',
       url: OPENCODE_SLACK_MCP_SERVER_URL,
       oauth: { clientId: OPENCODE_SLACK_MCP_CLIENT_ID },
-    },
-    'file-permission': {
-      type: 'local',
-      command: resolveMcpCommand(mcpToolsPath, 'file-permission', 'dist/index.mjs', nodeExe),
-      enabled: true,
-      environment: { PERMISSION_API_PORT: String(permissionApiPort), ...authEnv },
-      timeout: 30000,
-    },
-    'ask-user-question': {
-      type: 'local',
-      command: resolveMcpCommand(mcpToolsPath, 'ask-user-question', 'dist/index.mjs', nodeExe),
-      enabled: true,
-      environment: { QUESTION_API_PORT: String(questionApiPort), ...authEnv },
-      timeout: 600000, // 10 minutes — user needs time to read and respond
     },
     'request-connector-auth': {
       type: 'local',
@@ -128,14 +119,20 @@ export function buildMcpServers(options: BuildMcpServersOptions): Record<string,
       enabled: true,
       timeout: 30000,
     },
-    'desktop-control': {
-      type: 'local',
-      command: resolveMcpCommand(mcpToolsPath, 'desktop-control', 'dist/index.mjs', nodeExe),
-      enabled: true,
-      environment: { PERMISSION_API_PORT: String(permissionApiPort), ...authEnv },
-      timeout: 60000,
-    },
   };
+
+  if (whatsappApiPort) {
+    mcpServers['whatsapp'] = {
+      type: 'local',
+      command: resolveMcpCommand(mcpToolsPath, 'whatsapp', 'dist/index.mjs', nodeExe),
+      enabled: true,
+      environment: {
+        ACCOMPLISH_WHATSAPP_API_PORT: String(whatsappApiPort),
+        ...authEnv,
+      },
+      timeout: 30000,
+    };
+  }
 
   if (browserConfig.mode !== 'none') {
     const browserEnv: Record<string, string> = {};
@@ -158,6 +155,59 @@ export function buildMcpServers(options: BuildMcpServersOptions): Record<string,
       ...(Object.keys(browserEnv).length > 0 && { environment: browserEnv }),
       timeout: 30000,
     };
+  }
+
+  if (gwsAccountsManifestPath) {
+    const gwsEnv = { GWS_ACCOUNTS_MANIFEST: gwsAccountsManifestPath };
+    try {
+      mcpServers['gmail-mcp'] = {
+        type: 'local',
+        command: resolveMcpCommand(mcpToolsPath, 'gmail-mcp', 'dist/index.mjs', nodeExe),
+        enabled: true,
+        environment: gwsEnv,
+        timeout: 60000,
+      };
+    } catch {
+      // gmail-mcp not available (not yet built or installed)
+    }
+    try {
+      mcpServers['calendar-mcp'] = {
+        type: 'local',
+        command: resolveMcpCommand(mcpToolsPath, 'calendar-mcp', 'dist/index.mjs', nodeExe),
+        enabled: true,
+        environment: gwsEnv,
+        timeout: 60000,
+      };
+    } catch {
+      // calendar-mcp not available
+    }
+    try {
+      mcpServers['gws-mcp'] = {
+        type: 'local',
+        command: resolveMcpCommand(mcpToolsPath, 'gws-mcp', 'dist/index.mjs', nodeExe),
+        enabled: true,
+        environment: gwsEnv,
+        timeout: 60000,
+      };
+    } catch {
+      // gws-mcp not available (requires @googleworkspace/cli)
+    }
+    try {
+      mcpServers['request-google-file-picker'] = {
+        type: 'local',
+        command: resolveMcpCommand(
+          mcpToolsPath,
+          'request-google-file-picker',
+          'dist/index.mjs',
+          nodeExe,
+        ),
+        enabled: true,
+        environment: gwsEnv,
+        timeout: 30000,
+      };
+    } catch {
+      // request-google-file-picker not available
+    }
   }
 
   if (connectors) {

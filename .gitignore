@@ -14,6 +14,10 @@ out/
 .env*.local
 build.env
 
+# Auto-updater dev config (written by updater/index.ts when !app.isPackaged,
+# required by electron-updater's forceDevUpdateConfig)
+apps/desktop/dev-app-update.yml
+
 # Vercel
 .vercel/
 
@@ -86,3 +90,5 @@ apps/desktop/resources/nodejs/
 packages/agent-core/mcp-tools/*/package-lock.json
 packages/agent-core/mcp-tools/package-lock.json
 /.run/
+packages/agent-core/mcp-tools/dev-browser/server.mjs
+packages/agent-core/mcp-tools/dev-browser/.browser-data/

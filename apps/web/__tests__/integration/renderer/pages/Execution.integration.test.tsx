@@ -1155,7 +1155,7 @@ describe('Execution Page Integration', () => {
       task.result = {
         status: 'success',
         sessionId: 'session-abc',
-        pauseReason: 'auth',
+        pauseReason: 'oauth',
         pauseAction: {
           type: 'oauth-connect',
           providerId: OAuthProviderId.Slack,
@@ -1181,7 +1181,7 @@ describe('Execution Page Integration', () => {
       task.result = {
         status: 'success',
         sessionId: 'session-abc',
-        pauseReason: 'auth',
+        pauseReason: 'oauth',
         pauseAction: {
           type: 'oauth-connect',
           providerId: OAuthProviderId.Slack,

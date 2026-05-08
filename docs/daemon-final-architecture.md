@@ -1,5 +1,8 @@
 # Daemon Final Architecture — Flow Diagrams
 
+> [!WARNING]
+> **This document describes the pre-SDK-cutover PTY architecture.** The OpenCode SDK cutover port (commercial PR #720) replaced `node-pty` + `StreamParser` with `@opencode-ai/sdk` + `opencode serve`, so the `PTY Process` / `StreamParser` participants and byte-stream flows shown below no longer reflect runtime behaviour. The transport, participant names, and byte-stream fan-out are stale; the participants and data they exchange (adapter, TaskManager, daemon, UI) are still structurally accurate, as are the ordering and causality of events. Treat these diagrams as historical reference until they are rewritten in a follow-up docs PR. Current flow: `apps/daemon/src/opencode/server-manager.ts` spawns `opencode serve` per task; `packages/agent-core/src/internal/classes/OpenCodeAdapter.ts` subscribes to the SDK event stream; permissions/questions go through `client.permission.reply` / `client.question.reply` (not HTTP+MCP bridges).
+
 > **Current architecture** (implemented in Phases 0–11): standalone daemon process that survives Electron exit. The Electron app is a **thin UI/integration shell** (tray, native notifications, file pickers, auth browser flows, renderer IPC forwarding) that connects to the daemon via Unix socket / Windows named pipe JSON-RPC.
 >
 > Task scheduler is implemented with SQLite persistence, cron matching, and a dedicated Settings tab.
@@ -10,7 +13,7 @@
 
 | Owner                     | Responsibilities                                                                                                                                                                                                        |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`apps/daemon`**         | Task execution, task/session lifecycle, permission/question HTTP services, thought streaming, durable task state, reconnectable notification stream                                                                     |
+| **`apps/daemon`**         | Task execution, task/session lifecycle, permission/question HTTP services, durable task state, reconnectable notification stream                                                                                        |
 | **`apps/desktop`**        | Thin UI/integration shell: trusted-window checks, renderer IPC surface, tray, native notifications, native dialogs/file pickers, auth/browser flows (OAuth popups), forwarding daemon notifications to renderer         |
 | **`packages/agent-core`** | Daemon protocol/server/client/transport abstractions, TaskManager/OpenCodeAdapter/runtime building blocks, storage primitives, **shared config-building helpers** (skills, connectors, sandbox, workspace, attachments) |
 

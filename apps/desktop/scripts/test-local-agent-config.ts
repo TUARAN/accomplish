@@ -13,8 +13,10 @@ const TEST_LOCAL_AGENT_CHROME_PROFILE = path.join(
   '.accomplish-test-local-agent-chrome',
 );
 
-const PERMISSION_API_PORT = 3847;
-const QUESTION_API_PORT = 3848;
+// The file-permission and ask-user-question MCP shims were replaced by
+// SDK-native permission/question events during the SDK cutover port.
+// These test ports override dev-browser's default 9224/9225 to avoid
+// collision when a live dev-browser is also running on the same machine.
 
 interface McpServerConfig {
   type?: 'local' | 'remote';
@@ -97,24 +99,10 @@ export function generateTestLocalAgentConfig(): string {
       },
     },
     mcp: {
-      'file-permission': {
-        type: 'local',
-        command: ['npx', 'tsx', path.join(mcpToolsPath, 'file-permission', 'src', 'index.ts')],
-        enabled: true,
-        environment: {
-          PERMISSION_API_PORT: String(PERMISSION_API_PORT),
-        },
-        timeout: 10000,
-      },
-      'ask-user-question': {
-        type: 'local',
-        command: ['npx', 'tsx', path.join(mcpToolsPath, 'ask-user-question', 'src', 'index.ts')],
-        enabled: true,
-        environment: {
-          QUESTION_API_PORT: String(QUESTION_API_PORT),
-        },
-        timeout: 10000,
-      },
+      // Phase 3 of the OpenCode SDK cutover port removed the
+      // `file-permission` and `ask-user-question` MCP entries — the SDK
+      // emits `permission.asked` / `question.asked` events directly and the
+      // adapter replies via `client.permission.reply` / `client.question.reply`.
       'dev-browser-mcp': {
         type: 'local',
         command: ['npx', 'tsx', path.join(mcpToolsPath, 'dev-browser-mcp', 'src', 'index.ts')],

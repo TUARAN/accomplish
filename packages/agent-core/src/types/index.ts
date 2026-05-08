@@ -12,6 +12,8 @@ export type {
   TaskAdapterOptions,
   TaskCallbacks,
   TaskProgressEvent,
+  OnBeforeStartContext,
+  OnBeforeStartResult,
 } from './task-manager.js';
 
 // Storage API
@@ -39,16 +41,6 @@ export type {
   QuestionResponseData,
   PermissionValidationResult,
 } from './permission-handler.js';
-
-// Thought Stream API
-export type {
-  ThoughtStreamAPI,
-  ThoughtStreamOptions,
-  ThoughtEvent,
-  CheckpointEvent,
-  ThoughtCategory,
-  CheckpointStatus,
-} from './thought-stream.js';
 
 // Log Writer API
 export type {

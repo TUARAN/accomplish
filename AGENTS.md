@@ -4,7 +4,7 @@ This file provides general guidance for agents working with code in this reposit
 
 ## Project Overview
 
-Accomplish is an AI automation assistant with a split architecture: `apps/web` contains the standalone React UI, and `apps/desktop` is a thin Electron shell that loads web's build output. The main process spawns the OpenCode CLI (via `node-pty`) to execute user tasks. API keys are stored with AES-256-GCM encryption.
+Accomplish is an AI automation assistant with a split architecture: `apps/web` contains the standalone React UI, `apps/desktop` is a thin Electron shell that loads web's build output, and `apps/daemon` is a long-lived background process that owns task execution. The daemon spawns `opencode serve` subprocesses and speaks to them via `@opencode-ai/sdk` to run user tasks. API keys are stored with AES-256-GCM encryption.
 
 ## Common Commands
 
@@ -127,7 +127,7 @@ Static assets go in `apps/web/public/assets/`.
 
 1. Create `packages/agent-core/src/storage/migrations/vXXX-description.ts` (use `.js` extension in imports)
 2. Import and add to the `migrations` array in `packages/agent-core/src/storage/migrations/index.ts`
-3. Bump `CURRENT_VERSION` (currently 6)
+3. Bump `CURRENT_VERSION` (see the `CURRENT_VERSION` export in `packages/agent-core/src/storage/migrations/index.ts` for the current value)
 4. Run `pnpm -F @accomplish_ai/agent-core test`
 
 ### Changing Agent-Core Public API

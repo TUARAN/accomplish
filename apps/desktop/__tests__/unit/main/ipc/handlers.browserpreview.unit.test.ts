@@ -17,6 +17,15 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// ── Prevent undici from crashing on Node 20 (undici 8 requires Node 22 APIs) ──
+vi.mock('undici', () => ({
+  ProxyAgent: class ProxyAgent {},
+  Agent: class Agent {},
+  fetch: vi.fn(),
+  setGlobalDispatcher: vi.fn(),
+  getGlobalDispatcher: vi.fn(),
+}));
+
 // ── Hoisted mock fns (must be defined before any vi.mock() calls) ─────────────
 const {
   mockStartBrowserPreviewStream,
@@ -160,9 +169,19 @@ vi.mock('@accomplish_ai/agent-core', async (importOriginal) => {
 vi.mock('@accomplish_ai/agent-core/common', () => ({
   DEV_BROWSER_PORT: 9224,
   DEV_BROWSER_CDP_PORT: 9223,
+  getConnectorDefinitions: () => [],
 }));
 
 // ── Mock remaining dependencies ──────────────────────────────────────────────
+
+vi.mock('@main/connectors/connector-token-resolver', () => ({
+  connectBuiltInConnector: vi.fn(),
+  resolveMcpConnectorAccessToken: vi.fn(),
+}));
+
+vi.mock('@main/ipc/handlers/built-in-connector-handlers', () => ({
+  registerBuiltInConnectorHandlers: vi.fn(),
+}));
 
 vi.mock('@main/store/secureStorage', () => ({
   storeApiKey: vi.fn(),
@@ -171,16 +190,6 @@ vi.mock('@main/store/secureStorage', () => ({
   getAllApiKeys: vi.fn(() => Promise.resolve({})),
   hasAnyApiKey: vi.fn(() => Promise.resolve(false)),
   getBedrockCredentials: vi.fn(() => null),
-}));
-
-vi.mock('@main/permission-api', () => ({
-  startPermissionApiServer: vi.fn(),
-  startQuestionApiServer: vi.fn(),
-  initPermissionApi: vi.fn(),
-  resolvePermission: vi.fn(() => false),
-  resolveQuestion: vi.fn(() => true),
-  isFilePermissionRequest: vi.fn(() => false),
-  isQuestionRequest: vi.fn(() => false),
 }));
 
 vi.mock('@main/ipc/validation', () => ({
@@ -228,10 +237,6 @@ vi.mock('@main/logging', () => ({
 vi.mock('@main/services/speechToText', () => ({
   validateElevenLabsApiKey: vi.fn(() => Promise.resolve({ valid: true })),
   transcribeAudio: vi.fn(() => Promise.resolve({ success: true, result: { text: '' } })),
-}));
-
-vi.mock('@main/config', () => ({
-  getDesktopConfig: vi.fn(() => ({})),
 }));
 
 // ── Mock global fetch ─────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
+import { trackTaskStart } from '../../analytics/events';
 import {
   startBrowserPreviewStream,
   stopBrowserPreviewStream,
@@ -11,8 +12,7 @@ import {
   createTaskId,
   type TaskConfig,
   type FileAttachmentInfo,
-} from '@accomplish_ai/agent-core';
-import { getStorage } from '../../store/storage';
+} from '@accomplish_ai/agent-core/desktop-main';
 import {
   isMockTaskEventsEnabled,
   createMockTask,
@@ -24,15 +24,30 @@ import { handle, assertTrustedWindow } from './utils';
 import { getDaemonClient } from '../../daemon-bootstrap';
 import { sanitizeAttachments } from './attachment-utils';
 
-export function registerTaskHandlers(): void {
-  const storage = getStorage();
+/** Milestone 5 replacement for the local `storage.hasReadyProvider()`.
+ *  Route through `provider.getSettings` and apply the same predicate
+ *  (`connection_status='connected' AND selected_model_id IS NOT NULL`)
+ *  client-side. Returns false on RPC failure so we fall through to the
+ *  "no provider configured" error path instead of starting a task that
+ *  would immediately fail inside the daemon. */
+async function hasReadyProviderViaDaemon(): Promise<boolean> {
+  try {
+    const settings = await getDaemonClient().call('provider.getSettings');
+    return Object.values(settings.connectedProviders).some(
+      (p) => p?.connectionStatus === 'connected' && !!p.selectedModelId,
+    );
+  } catch {
+    return false;
+  }
+}
 
+export function registerTaskHandlers(): void {
   // ─── Task execution (proxied to daemon) ──────────────────────────────────────
 
   handle('task:start', async (event: IpcMainInvokeEvent, config: TaskConfig) => {
     assertTrustedWindow(BrowserWindow.fromWebContents(event.sender));
 
-    if (!isMockTaskEventsEnabled() && !storage.hasReadyProvider()) {
+    if (!isMockTaskEventsEnabled() && !(await hasReadyProviderViaDaemon())) {
       throw new Error(
         'No provider is ready. Please connect a provider and select a model in Settings.',
       );
@@ -40,12 +55,13 @@ export function registerTaskHandlers(): void {
 
     const taskId = createTaskId();
 
-    // E2E mock path — bypasses daemon entirely
+    // E2E mock path — bypasses daemon entirely. The mock flow keeps its
+    // own in-memory task state; tests verify renderer events rather than
+    // DB persistence, so no storage write happens here post-M5.
     if (isMockTaskEventsEnabled()) {
       const window = BrowserWindow.fromWebContents(event.sender)!;
       const mockTask = createMockTask(taskId, config.prompt);
       const scenario = detectScenarioFromPrompt(config.prompt);
-      storage.saveTask(mockTask, workspaceManager.getActiveWorkspace());
       void executeMockTaskFlow(window, {
         taskId,
         prompt: config.prompt,
@@ -72,6 +88,16 @@ export function registerTaskHandlers(): void {
       sessionId: config.sessionId,
       attachments: sanitizedAttachments,
     });
+
+    // Analytics: track task start
+    try {
+      trackTaskStart(
+        { taskId, sessionId: config.sessionId || '', taskType: 'chat' },
+        config.modelId,
+      );
+    } catch {
+      /* best-effort analytics */
+    }
 
     return task;
   });
@@ -112,9 +138,17 @@ export function registerTaskHandlers(): void {
 
   handle('task:list', async (_event: IpcMainInvokeEvent) => {
     const client = getDaemonClient();
-    return await client.call('task.list', {
-      workspaceId: workspaceManager.getActiveWorkspace() ?? undefined,
-    });
+    const activeId = workspaceManager.getActiveWorkspace();
+    // Skip workspace filter for the default workspace so unassigned tasks (workspace_id = NULL)
+    // remain visible — the default workspace acts as an "all tasks" view.
+    const activeWorkspace = activeId ? workspaceManager.getWorkspace(activeId) : null;
+    // Default workspace: pass its UUID + includeUnassigned=true so NULL-workspace
+    // tasks (created before workspaces existed) are also returned, but tasks
+    // explicitly assigned to other workspaces are excluded.
+    // Non-default workspaces: strict filter, no unassigned tasks included.
+    const isDefault = !!activeWorkspace?.isDefault;
+    const workspaceId = activeId && activeWorkspace ? activeId : undefined;
+    return await client.call('task.list', { workspaceId, includeUnassigned: isDefault });
   });
 
   handle('task:delete', async (_event: IpcMainInvokeEvent, taskId: string) => {
@@ -181,7 +215,7 @@ export function registerTaskHandlers(): void {
         ? sanitizeString(existingTaskId, 'taskId', 128)
         : undefined;
 
-      if (!isMockTaskEventsEnabled() && !storage.hasReadyProvider()) {
+      if (!isMockTaskEventsEnabled() && !(await hasReadyProviderViaDaemon())) {
         throw new Error(
           'No provider is ready. Please connect a provider and select a model in Settings.',
         );

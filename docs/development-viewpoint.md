@@ -24,7 +24,7 @@ graph TD
   DESKTOP -->|"bundles at build time"| MCP_TOOLS
   CORE -->|"contains"| MCP_TOOLS
 
-  OC["opencode-ai<br/><i>Go binary · v1.2.24</i><br/>(npm package)"]
+  OC["opencode-ai<br/><i>Go binary · v1.14.18</i><br/>(npm package)"]
   DESKTOP -->|"optionalDependency<br/>(platform-specific)"| OC
 
   classDef app fill:#e8f4fd,stroke:#1e88e5,stroke-width:2px
@@ -216,7 +216,7 @@ graph TD
   CLIENT --> PAGES["pages/<br/><i>Home · Execution<br/>History · Settings</i>"]
   CLIENT --> COMPONENTS["components/<br/><i>UI primitives (Radix)<br/>Layout · TaskLauncher<br/>Execution · Skills</i>"]
   CLIENT --> STORES["stores/<br/><i>Zustand stores<br/>Task · Settings · Provider</i>"]
-  CLIENT --> HOOKS["hooks/<br/><i>useTask · useProviders<br/>useThoughtStream</i>"]
+  CLIENT --> HOOKS["hooks/<br/><i>useTask · useProviders</i>"]
   CLIENT --> LIB["lib/<br/><i>IPC client · Theme<br/>Formatters · Providers</i>"]
   CLIENT --> I18N_DIR["i18n/<br/><i>Translations (en, ...)<br/>i18next config</i>"]
 
@@ -242,7 +242,7 @@ graph TD
   CORE --> INTERNAL["internal/classes/<br/><i>TaskManager · Storage<br/>(implementation details)</i>"]
   CORE --> BROWSER["browser/<br/><i>Playwright server<br/>Element detection</i>"]
 
-  MCP["mcp-tools/<br/><i>8 tools: start-task · complete-task<br/>file-permission · ask-user<br/>dev-browser · dev-browser-mcp<br/>report-thought · report-checkpoint</i>"]
+  MCP["mcp-tools/<br/><i>start-task · complete-task<br/>dev-browser · dev-browser-mcp<br/>whatsapp · request-connector-auth · …</i>"]
   CORE --> MCP
 
   classDef dir fill:#fff3e0,stroke:#fb8c00
@@ -256,17 +256,17 @@ graph TD
 
 ## Summary
 
-| Aspect               | Details                                                            |
-| -------------------- | ------------------------------------------------------------------ |
-| **Monorepo**         | pnpm workspaces (`apps/*`, `packages/*`)                           |
-| **Apps**             | `@accomplish/desktop` (Electron 35), `@accomplish/web` (React 19)  |
-| **Shared library**   | `@accomplish_ai/agent-core` (TypeScript ESM)                       |
-| **Build tools**      | Vite 6, tsc, esbuild, electron-builder                             |
-| **OpenCode CLI**     | Go binary v1.2.24, distributed as npm packages (platform-specific) |
-| **Database**         | SQLite (better-sqlite3) + AES-256-GCM encrypted secure storage     |
-| **Process spawning** | node-pty for PTY lifecycle management                              |
-| **MCP tools**        | 8 standalone Node.js packages, bundled with esbuild                |
-| **UI stack**         | React 19 + Zustand 5 + Tailwind CSS + Radix UI + i18next           |
-| **Testing**          | Vitest + Playwright E2E                                            |
-| **Node requirement** | ≥ 20.0.0                                                           |
-| **Package manager**  | pnpm 9.15.0                                                        |
+| Aspect               | Details                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| **Monorepo**         | pnpm workspaces (`apps/*`, `packages/*`)                            |
+| **Apps**             | `@accomplish/desktop` (Electron 35), `@accomplish/web` (React 19)   |
+| **Shared library**   | `@accomplish_ai/agent-core` (TypeScript ESM)                        |
+| **Build tools**      | Vite 6, tsc, esbuild, electron-builder                              |
+| **OpenCode CLI**     | Go binary v1.14.18, distributed as npm packages (platform-specific) |
+| **Database**         | SQLite (better-sqlite3) + AES-256-GCM encrypted secure storage      |
+| **Process spawning** | node-pty for PTY lifecycle management                               |
+| **MCP tools**        | 8 standalone Node.js packages, bundled with esbuild                 |
+| **UI stack**         | React 19 + Zustand 5 + Tailwind CSS + Radix UI + i18next            |
+| **Testing**          | Vitest + Playwright E2E                                             |
+| **Node requirement** | ≥ 20.0.0                                                            |
+| **Package manager**  | pnpm 9.15.0                                                         |
