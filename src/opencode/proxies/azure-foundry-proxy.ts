@@ -12,12 +12,13 @@ export { transformRequestBody } from './azure-foundry-proxy-transform.js';
 
 const log = createConsoleLogger({ prefix: 'AzureFoundryProxy' });
 
-const AZURE_FOUNDRY_PROXY_PORT = 9228;
+const DEFAULT_AZURE_FOUNDRY_PROXY_PORT = 9228;
 const MAX_REQUEST_SIZE = 10 * 1024 * 1024;
 
 let server: http.Server | null = null;
 let targetBaseUrl: string | null = null;
 let serverStartupPromise: Promise<void> | null = null;
+let activeProxyPort = DEFAULT_AZURE_FOUNDRY_PROXY_PORT;
 
 const HOP_BY_HOP_HEADERS = [
   'connection',
@@ -37,7 +38,30 @@ export interface AzureFoundryProxyInfo {
 }
 
 function getProxyBaseUrl(): string {
-  return `http://127.0.0.1:${AZURE_FOUNDRY_PROXY_PORT}`;
+  return `http://127.0.0.1:${activeProxyPort}`;
+}
+
+function getRequestedProxyPort(): number {
+  const raw = process.env.ACCOMPLISH_AZURE_FOUNDRY_PROXY_PORT;
+  if (!raw) {
+    return DEFAULT_AZURE_FOUNDRY_PROXY_PORT;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 65535) {
+    return parsed;
+  }
+
+  log.warn(`[Azure Foundry Proxy] Ignoring invalid proxy port: ${raw}`);
+  return DEFAULT_AZURE_FOUNDRY_PROXY_PORT;
+}
+
+function getListeningPort(listeningServer: http.Server): number {
+  const address = listeningServer.address();
+  if (!address || typeof address === 'string') {
+    return getRequestedProxyPort();
+  }
+  return address.port;
 }
 
 function sendJson(res: http.ServerResponse, status: number, body: object): void {
@@ -112,7 +136,7 @@ function forwardRequest(
 
 function proxyRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (req.url === '/health') {
-    sendJson(res, 200, { status: 'ok', target: targetBaseUrl, port: AZURE_FOUNDRY_PROXY_PORT });
+    sendJson(res, 200, { status: 'ok', target: targetBaseUrl, port: activeProxyPort });
     return;
   }
 
@@ -168,6 +192,7 @@ function proxyRequest(req: http.IncomingMessage, res: http.ServerResponse): void
 
 async function startProxyServer(): Promise<void> {
   const newServer = http.createServer(proxyRequest);
+  const requestedPort = getRequestedProxyPort();
   return new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       newServer.close();
@@ -175,21 +200,78 @@ async function startProxyServer(): Promise<void> {
     }, 5000);
     newServer.once('error', (error: NodeJS.ErrnoException) => {
       clearTimeout(timeout);
-      reject(
-        error.code === 'EADDRINUSE'
-          ? new Error(
-              `Port ${AZURE_FOUNDRY_PROXY_PORT} is already in use. Please close other applications using this port or restart the app.`,
-            )
-          : error,
-      );
+      if (error.code === 'EADDRINUSE' && requestedPort !== 0) {
+        log.warn(
+          `[Azure Foundry Proxy] Port ${requestedPort} is already in use; falling back to an available port`,
+        );
+        const fallbackServer = http.createServer(proxyRequest);
+        fallbackServer.once('error', reject);
+        fallbackServer.listen(0, '127.0.0.1', () => {
+          server = fallbackServer;
+          activeProxyPort = getListeningPort(fallbackServer);
+          log.info(`[Azure Foundry Proxy] Listening on fallback port ${activeProxyPort}`);
+          resolve();
+        });
+        return;
+      }
+      reject(error);
     });
-    newServer.listen(AZURE_FOUNDRY_PROXY_PORT, '127.0.0.1', () => {
+    newServer.listen(requestedPort, '127.0.0.1', () => {
       clearTimeout(timeout);
-      log.info(`[Azure Foundry Proxy] Listening on port ${AZURE_FOUNDRY_PROXY_PORT}`);
       server = newServer;
+      activeProxyPort = getListeningPort(newServer);
+      log.info(`[Azure Foundry Proxy] Listening on port ${activeProxyPort}`);
       resolve();
     });
   });
+}
+
+function resetProxyState(): void {
+  server = null;
+  targetBaseUrl = null;
+  activeProxyPort = DEFAULT_AZURE_FOUNDRY_PROXY_PORT;
+}
+
+export function getAzureFoundryProxyDefaultPort(): number {
+  return DEFAULT_AZURE_FOUNDRY_PROXY_PORT;
+}
+
+export function getAzureFoundryProxyActivePort(): number {
+  return activeProxyPort;
+}
+
+export function getAzureFoundryProxyRequestedPortForTest(): number {
+  return getRequestedProxyPort();
+}
+
+async function closeServer(serverToClose: http.Server): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      log.warn('[Azure Foundry Proxy] Shutdown timeout, forcing close');
+      resetProxyState();
+      resolve();
+    }, 3000);
+    serverToClose.close((err) => {
+      clearTimeout(timeout);
+      if (err && (err as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING') {
+        log.error('[Azure Foundry Proxy] Error during shutdown:', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        reject(err);
+      } else {
+        log.info('[Azure Foundry Proxy] Server stopped');
+        resolve();
+      }
+    });
+  });
+}
+
+function getProxyInfo(): AzureFoundryProxyInfo {
+  return {
+    baseURL: getProxyBaseUrl(),
+    targetBaseURL: targetBaseUrl ?? '',
+    port: activeProxyPort,
+  };
 }
 
 export async function ensureAzureFoundryProxy(baseURL: string): Promise<AzureFoundryProxyInfo> {
@@ -202,39 +284,17 @@ export async function ensureAzureFoundryProxy(baseURL: string): Promise<AzureFou
     }
     await serverStartupPromise;
   }
-  return {
-    baseURL: getProxyBaseUrl(),
-    targetBaseURL: targetBaseUrl,
-    port: AZURE_FOUNDRY_PROXY_PORT,
-  };
+  return getProxyInfo();
 }
 
 export async function stopAzureFoundryProxy(): Promise<void> {
-  if (!server) {
+  const serverToClose = server;
+  if (!serverToClose) {
+    resetProxyState();
     return;
   }
-  await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      log.warn('[Azure Foundry Proxy] Shutdown timeout, forcing close');
-      server = null;
-      targetBaseUrl = null;
-      resolve();
-    }, 3000);
-    server!.close((err) => {
-      clearTimeout(timeout);
-      if (err && (err as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING') {
-        log.error('[Azure Foundry Proxy] Error during shutdown:', {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        reject(err);
-      } else {
-        log.info('[Azure Foundry Proxy] Server stopped');
-        resolve();
-      }
-    });
-    server = null;
-    targetBaseUrl = null;
-  });
+  await closeServer(serverToClose);
+  resetProxyState();
 }
 
 export function isAzureFoundryProxyRunning(): boolean {
