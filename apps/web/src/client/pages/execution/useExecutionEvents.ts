@@ -121,7 +121,7 @@ export function useExecutionEvents(opts: UseExecutionEventsOptions) {
     // status dot already show "Reconnecting..." to the user.
     // On reconnect: re-fetch task to get authoritative state from daemon DB.
     // On reconnect-failed: only then mark running task as failed.
-    const unsubscribeDaemonReconnected = accomplish.onDaemonReconnected(() => {
+    const unsubscribeDaemonReconnected = accomplish.onDaemonReconnected?.(() => {
       if (id) {
         loadTaskById(id);
       }
@@ -144,7 +144,7 @@ export function useExecutionEvents(opts: UseExecutionEventsOptions) {
       unsubscribePermission();
       unsubscribeStatusChange?.();
       unsubscribeDebugLog();
-      unsubscribeDaemonReconnected();
+      unsubscribeDaemonReconnected?.();
       unsubscribeDaemonReconnectFailed?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { hasAnyReadyProvider, getOAuthProviderDisplayName } from '@accomplish_ai/agent-core/common';
 import type { useExecutionCore } from './useExecutionCore';
 
@@ -70,10 +70,12 @@ export function useExecutionPauseActions(s: CoreState) {
     }
   }, [accomplish, t, resumePausedTask, pauseAction, setTaskActionError, setIsTaskActionRunning]);
 
-  const handleTaskAction = useMemo(
-    () => (s.isConnectorAuthPause ? handlePauseAction : handleContinue),
-    [s.isConnectorAuthPause, handlePauseAction, handleContinue],
-  );
+  const handleTaskAction = useCallback(async () => {
+    if (s.isConnectorAuthPause) {
+      return await handlePauseAction();
+    }
+    return await handleContinue();
+  }, [s.isConnectorAuthPause, handlePauseAction, handleContinue]);
 
   return { handleContinue, handlePauseAction, handleTaskAction, resumePausedTask };
 }

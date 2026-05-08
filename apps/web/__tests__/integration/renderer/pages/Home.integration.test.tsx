@@ -40,6 +40,7 @@ const mockAccomplish = {
   hasAnyApiKey: mockHasAnyApiKey,
   getSelectedModel: vi.fn().mockResolvedValue({ provider: 'anthropic', id: 'claude-3-opus' }),
   getOllamaConfig: vi.fn().mockResolvedValue(null),
+  getBuildCapabilities: vi.fn().mockResolvedValue({ hasFreeMode: false, hasAnalytics: false }),
   onTaskUpdate: mockOnTaskUpdate.mockReturnValue(() => {}),
   onPermissionRequest: mockOnPermissionRequest.mockReturnValue(() => {}),
   logEvent: mockLogEvent.mockResolvedValue(undefined),
@@ -70,6 +71,7 @@ const mockAccomplish = {
 // Mock the accomplish module
 vi.mock('@/lib/accomplish', () => ({
   getAccomplish: () => mockAccomplish,
+  useAccomplish: () => mockAccomplish,
 }));
 
 // Mock store state holder
@@ -86,7 +88,8 @@ let mockStoreState = {
 
 // Mock the task store
 vi.mock('@/stores/taskStore', () => ({
-  useTaskStore: () => mockStoreState,
+  useTaskStore: (selector?: (state: typeof mockStoreState) => unknown) =>
+    selector ? selector(mockStoreState) : mockStoreState,
 }));
 
 // Mock framer-motion for simpler testing
@@ -129,7 +132,27 @@ vi.mock('@/components/layout/SettingsDialog', () => ({
     open ? (
       <div data-testid="settings-dialog" role="dialog">
         <button onClick={() => onOpenChange(false)}>Close</button>
-        {onApiKeySaved && <button onClick={onApiKeySaved}>Save API Key</button>}
+        {onApiKeySaved && (
+          <button
+            onClick={() => {
+              mockAccomplish.getProviderSettings.mockResolvedValue({
+                activeProviderId: 'anthropic',
+                connectedProviders: {
+                  anthropic: {
+                    providerId: 'anthropic',
+                    connectionStatus: 'connected',
+                    selectedModelId: 'claude-3-5-sonnet-20241022',
+                    credentials: { type: 'api-key', apiKey: 'test-key' },
+                  },
+                },
+                debugMode: false,
+              });
+              void onApiKeySaved();
+            }}
+          >
+            Save API Key
+          </button>
+        )}
       </div>
     ) : null,
   default: ({
@@ -144,7 +167,27 @@ vi.mock('@/components/layout/SettingsDialog', () => ({
     open ? (
       <div data-testid="settings-dialog" role="dialog">
         <button onClick={() => onOpenChange(false)}>Close</button>
-        {onApiKeySaved && <button onClick={onApiKeySaved}>Save API Key</button>}
+        {onApiKeySaved && (
+          <button
+            onClick={() => {
+              mockAccomplish.getProviderSettings.mockResolvedValue({
+                activeProviderId: 'anthropic',
+                connectedProviders: {
+                  anthropic: {
+                    providerId: 'anthropic',
+                    connectionStatus: 'connected',
+                    selectedModelId: 'claude-3-5-sonnet-20241022',
+                    credentials: { type: 'api-key', apiKey: 'test-key' },
+                  },
+                },
+                debugMode: false,
+              });
+              void onApiKeySaved();
+            }}
+          >
+            Save API Key
+          </button>
+        )}
       </div>
     ) : null,
 }));

@@ -31,7 +31,14 @@ export function useSlashCommand({
   const loadSkills = useCallback(async () => {
     try {
       const accomplish = getAccomplish();
-      const skills = await accomplish.getEnabledSkills();
+      const hasEnabledSkillsApi = typeof accomplish.getEnabledSkills === 'function';
+      const hasSkillsApi = typeof accomplish.getSkills === 'function';
+      if (!hasEnabledSkillsApi && !hasSkillsApi) {
+        return skillsCacheRef.current;
+      }
+      const skills = hasEnabledSkillsApi
+        ? await accomplish.getEnabledSkills()
+        : (await accomplish.getSkills()).filter((skill) => skill.isEnabled);
       const visible = skills.filter((s) => !s.isHidden);
       skillsCacheRef.current = visible;
       return visible;

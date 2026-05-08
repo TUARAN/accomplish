@@ -72,10 +72,21 @@ g.window.accomplish = {
   pickFiles: vi.fn().mockResolvedValue([]),
   getFilePath: vi.fn((file: File) => file.name),
   processDroppedFiles: vi.fn().mockResolvedValue([]),
+  getSkills: vi.fn().mockResolvedValue([]),
+  getEnabledSkills: vi.fn().mockResolvedValue([]),
   onTaskProgress: vi.fn().mockReturnValue(() => {}),
   onTaskUpdate: vi.fn().mockReturnValue(() => {}),
   onTaskSummary: vi.fn().mockReturnValue(() => {}),
   onTodoUpdate: vi.fn().mockReturnValue(() => {}),
+  onAuthError: vi.fn().mockReturnValue(() => {}),
+  onDaemonDisconnected: vi.fn().mockReturnValue(() => {}),
+  onDaemonReconnected: vi.fn().mockReturnValue(() => {}),
+  onDaemonReconnectFailed: vi.fn().mockReturnValue(() => {}),
+  onWorkspaceChanged: vi.fn().mockReturnValue(() => {}),
+  onWorkspaceDeleted: vi.fn().mockReturnValue(() => {}),
+  getSelectedModel: vi.fn().mockResolvedValue(null),
+  getOllamaConfig: vi.fn().mockResolvedValue(null),
+  logEvent: vi.fn().mockResolvedValue(undefined),
 };
 
 export {};

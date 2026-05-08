@@ -56,8 +56,12 @@ export function ProviderGrid({
   // Check build capabilities on mount to determine if accomplish-ai should be shown
   useEffect(() => {
     let cancelled = false;
-    getAccomplish()
-      .getBuildCapabilities()
+    const accomplish = getAccomplish();
+    const capabilitiesPromise =
+      typeof accomplish.getBuildCapabilities === 'function'
+        ? accomplish.getBuildCapabilities()
+        : Promise.resolve({ hasFreeMode: false, hasAnalytics: false });
+    capabilitiesPromise
       .then((caps) => {
         if (!cancelled) setHasFreeMode(caps.hasFreeMode);
       })

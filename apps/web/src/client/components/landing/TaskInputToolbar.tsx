@@ -43,7 +43,7 @@ export function TaskInputToolbar({
   const { t } = useTranslation('common');
   const accomplish = getAccomplish();
   const submitLabel = isLoading ? t('buttons.stop') : t('buttons.submit');
-  const isButtonDisabled = isSubmitDisabled || isRecording || slashCommandOpen;
+  const isButtonDisabled = isLoading ? false : isSubmitDisabled || isRecording || slashCommandOpen;
 
   const buttonColorClass = isLoading
     ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
@@ -88,12 +88,13 @@ export function TaskInputToolbar({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex" title={buttonTitle}>
+            <span className="inline-flex">
               <button
                 data-testid="task-input-submit"
                 type="button"
                 aria-label={submitLabel}
                 aria-disabled={isButtonDisabled}
+                title={buttonTitle}
                 onClick={() => {
                   accomplish.logEvent({
                     level: 'info',

@@ -63,6 +63,7 @@ const mockAccomplish = {
   getNotificationsEnabled: vi.fn().mockResolvedValue(true),
   setNotificationsEnabled: vi.fn().mockResolvedValue(undefined),
   getVersion: vi.fn().mockResolvedValue('0.1.0-test'),
+  getBuildCapabilities: vi.fn().mockResolvedValue({ hasFreeMode: false, hasAnalytics: false }),
   fetchProviderModels: vi.fn().mockResolvedValue({ success: true, models: [] }),
   getSandboxConfig: vi.fn().mockResolvedValue({
     mode: 'disabled',
@@ -79,6 +80,7 @@ const mockAccomplish = {
 // Mock the accomplish module
 vi.mock('@/lib/accomplish', () => ({
   getAccomplish: () => mockAccomplish,
+  useAccomplish: () => mockAccomplish,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -275,7 +277,7 @@ describe('SettingsDialog Integration', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
         // Verify anthropic card has green background (is active)
         const anthropicCard = screen.getByTestId('provider-card-anthropic');
-        expect(anthropicCard.className).toContain('bg-[#e9f7e7]');
+        expect(anthropicCard.className).toContain('bg-provider-bg-active');
       });
 
       // Verify the initial state: anthropic is active
@@ -288,7 +290,7 @@ describe('SettingsDialog Integration', () => {
     it('should render the Slack authentication card', async () => {
       render(<SettingsDialog {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Connectors' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Connectors' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('slack-auth-card')).toBeInTheDocument();
@@ -305,7 +307,7 @@ describe('SettingsDialog Integration', () => {
 
       render(<SettingsDialog {...defaultProps} />);
 
-      fireEvent.click(screen.getByRole('button', { name: 'Connectors' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Connectors' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('slack-auth-button')).toBeInTheDocument();

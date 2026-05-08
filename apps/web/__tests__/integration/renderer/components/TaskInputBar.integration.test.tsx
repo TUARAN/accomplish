@@ -45,11 +45,13 @@ const mockAccomplish = {
   saveBedrockCredentials: vi.fn().mockResolvedValue(undefined),
   speechIsConfigured: vi.fn().mockResolvedValue(true),
   getEnabledSkills: vi.fn().mockResolvedValue([]),
+  getBuildCapabilities: vi.fn().mockResolvedValue({ hasFreeMode: false, hasAnalytics: false }),
 };
 
 // Mock the accomplish module
 vi.mock('@/lib/accomplish', () => ({
   getAccomplish: () => mockAccomplish,
+  useAccomplish: () => mockAccomplish,
 }));
 
 // Mock Radix Tooltip to render content directly (portals don't work in jsdom)

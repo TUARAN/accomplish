@@ -94,7 +94,7 @@ export function registerTaskSubscriptions(getStore: () => import('./taskStore').
     getStore().setAuthError(data);
   });
 
-  window.accomplish.onDaemonReconnected(() => {
+  window.accomplish.onDaemonReconnected?.(() => {
     const state = getStore();
     void state.loadTasks();
     if (state.currentTask?.id) {

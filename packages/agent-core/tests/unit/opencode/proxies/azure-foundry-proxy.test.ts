@@ -4,10 +4,12 @@ import {
   ensureAzureFoundryProxy,
   stopAzureFoundryProxy,
   isAzureFoundryProxyRunning,
+  getAzureFoundryProxyDefaultPort,
 } from '../../../../src/opencode/proxies/azure-foundry-proxy.js';
 
 describe('Azure Foundry Proxy', () => {
   beforeEach(() => {
+    process.env.ACCOMPLISH_AZURE_FOUNDRY_PROXY_PORT = '0';
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -17,6 +19,7 @@ describe('Azure Foundry Proxy', () => {
     vi.restoreAllMocks();
     // Clean up any running proxy
     await stopAzureFoundryProxy();
+    delete process.env.ACCOMPLISH_AZURE_FOUNDRY_PROXY_PORT;
   });
 
   describe('transformRequestBody', () => {
@@ -122,9 +125,13 @@ describe('Azure Foundry Proxy', () => {
     it('should start proxy server and return proxy info', async () => {
       const result = await ensureAzureFoundryProxy('https://api.azure.com/openai');
 
-      expect(result.baseURL).toBe('http://127.0.0.1:9228');
+      expect(result.baseURL).toBe(`http://127.0.0.1:${result.port}`);
       expect(result.targetBaseURL).toBe('https://api.azure.com/openai');
-      expect(result.port).toBe(9228);
+      expect(result.port).toBeGreaterThan(0);
+    });
+
+    it('should expose default production port when not overridden', () => {
+      expect(getAzureFoundryProxyDefaultPort()).toBe(9228);
     });
 
     it('should reuse existing proxy server', async () => {

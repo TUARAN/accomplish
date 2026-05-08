@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Play } from '@phosphor-icons/react';
 
 interface MessageTaskActionProps {
-  onTaskAction: () => void;
+  onTaskAction: () => void | Promise<unknown>;
   isLoading: boolean;
   isTaskActionRunning: boolean;
   taskActionLabel?: string;
@@ -22,7 +22,11 @@ export function MessageTaskAction({
     <>
       <Button
         size="sm"
-        onClick={onTaskAction}
+        type="button"
+        data-testid="message-task-action"
+        onClick={() => {
+          void onTaskAction();
+        }}
         disabled={isLoading || isTaskActionRunning}
         className="mt-3 gap-1.5"
       >

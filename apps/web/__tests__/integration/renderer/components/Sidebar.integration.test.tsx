@@ -40,6 +40,7 @@ const mockAccomplish = {
   onTaskUpdate: mockOnTaskUpdate.mockReturnValue(() => {}),
   getSelectedModel: vi.fn().mockResolvedValue({ provider: 'anthropic', id: 'claude-3-opus' }),
   getOllamaConfig: vi.fn().mockResolvedValue(null),
+  getBuildCapabilities: vi.fn().mockResolvedValue({ hasFreeMode: false, hasAnalytics: false }),
   isE2EMode: vi.fn().mockResolvedValue(false),
   getProviderSettings: vi.fn().mockResolvedValue({
     activeProviderId: 'anthropic',
@@ -70,6 +71,7 @@ const mockAccomplish = {
 // Mock the accomplish module
 vi.mock('@/lib/accomplish', () => ({
   getAccomplish: () => mockAccomplish,
+  useAccomplish: () => mockAccomplish,
 }));
 
 // Create a store state holder for testing
@@ -82,7 +84,8 @@ let mockStoreState = {
 
 // Mock the task store
 vi.mock('@/stores/taskStore', () => ({
-  useTaskStore: () => mockStoreState,
+  useTaskStore: (selector?: (state: typeof mockStoreState) => unknown) =>
+    selector ? selector(mockStoreState) : mockStoreState,
 }));
 
 // Mock the SettingsDialog to simplify testing

@@ -53,18 +53,20 @@ function registerDaemonSubscriptions(): void {
   const accomplish = window.accomplish;
   const { setStatus } = useDaemonStore.getState();
 
-  accomplish.onDaemonDisconnected(() => {
+  accomplish.onDaemonDisconnected?.(() => {
     useDaemonStore.getState().setStatus('disconnected');
   });
 
-  accomplish.onDaemonReconnected(() => {
+  accomplish.onDaemonReconnected?.(() => {
     useDaemonStore.getState().setStatus('connected');
   });
 
-  if (accomplish.onDaemonReconnectFailed) {
-    accomplish.onDaemonReconnectFailed(() => {
-      useDaemonStore.getState().setStatus('reconnect-failed');
-    });
+  accomplish.onDaemonReconnectFailed?.(() => {
+    useDaemonStore.getState().setStatus('reconnect-failed');
+  });
+
+  if (typeof accomplish.daemonPing !== 'function') {
+    return;
   }
 
   // Initial status check

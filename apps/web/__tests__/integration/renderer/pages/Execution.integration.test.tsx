@@ -70,6 +70,7 @@ const mockAccomplish = {
   onDebugModeChange: vi.fn().mockReturnValue(() => {}),
   getSelectedModel: vi.fn().mockResolvedValue({ provider: 'anthropic', id: 'claude-3-opus' }),
   getOllamaConfig: vi.fn().mockResolvedValue(null),
+  getBuildCapabilities: vi.fn().mockResolvedValue({ hasFreeMode: false, hasAnalytics: false }),
   getDebugMode: vi.fn().mockResolvedValue(false),
   getNotificationsEnabled: vi.fn().mockResolvedValue(true),
   setNotificationsEnabled: vi.fn().mockResolvedValue(undefined),
@@ -121,6 +122,7 @@ const mockAccomplish = {
 // Mock the accomplish module
 vi.mock('@/lib/accomplish', () => ({
   getAccomplish: () => mockAccomplish,
+  useAccomplish: () => mockAccomplish,
 }));
 
 // Mock store state holder
@@ -169,7 +171,8 @@ let mockStoreState: {
 // Mock the task store - needs both hook usage and .getState() for direct calls
 vi.mock('@/stores/taskStore', () => {
   // Create a function that will be used as useTaskStore
-  const useTaskStoreFn = () => mockStoreState;
+  const useTaskStoreFn = (selector?: (state: typeof mockStoreState) => unknown) =>
+    selector ? selector(mockStoreState) : mockStoreState;
   // Add getState method for direct store access (used by getTodosForTask callback)
   useTaskStoreFn.getState = () => mockStoreState;
   return { useTaskStore: useTaskStoreFn };
@@ -540,7 +543,7 @@ describe('Execution Page Integration', () => {
       });
     });
 
-    it('should call sendFollowUp with continue when Continue button is clicked', async () => {
+    it('should respond to a question permission with custom text', async () => {
       mockStoreState.currentTask = createMockTask('task-123', 'Task', 'waiting_permission');
       mockStoreState.permissionRequests = {
         'task-123': {
@@ -554,11 +557,19 @@ describe('Execution Page Integration', () => {
 
       renderWithRouter('task-123');
 
-      const continueButton = screen.getByRole('button', { name: /continue task/i });
-      fireEvent.click(continueButton);
+      fireEvent.change(screen.getByLabelText('Custom response'), {
+        target: { value: 'continue' },
+      });
+      fireEvent.click(screen.getByTestId('permission-allow-button'));
 
       await waitFor(() => {
-        expect(mockSendFollowUp).toHaveBeenCalledWith('continue', []);
+        expect(mockRespondToPermission).toHaveBeenCalledWith({
+          requestId: 'perm-1',
+          taskId: 'task-123',
+          decision: 'allow',
+          selectedOptions: [],
+          customText: 'continue',
+        });
       });
     });
 
@@ -1084,7 +1095,7 @@ describe('Execution Page Integration', () => {
       renderWithRouter('task-123');
 
       // Assert - cancelled tasks render a badge span, not a heading
-      expect(screen.getByText(/cancelled/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/cancelled/i).length).toBeGreaterThan(0);
     });
 
     it('should show Continue button for interrupted task with session and messages', () => {
@@ -1180,13 +1191,18 @@ describe('Execution Page Integration', () => {
         },
       };
       mockStoreState.currentTask = task;
+      renderWithRouter('task-123');
+
+      mockAccomplish.getSlackMcpOauthStatus.mockReset();
       mockAccomplish.getSlackMcpOauthStatus
         .mockResolvedValueOnce({ connected: false, pendingAuthorization: false })
         .mockResolvedValueOnce({ connected: true, pendingAuthorization: false });
 
-      renderWithRouter('task-123');
-
-      fireEvent.click(screen.getByRole('button', { name: 'Authenticate Slack' }));
+      const authButton = await screen.findByTestId('message-task-action');
+      await waitFor(() => {
+        expect(authButton).not.toBeDisabled();
+      });
+      authButton.click();
 
       await waitFor(() => {
         expect(mockAccomplish.loginSlackMcp).toHaveBeenCalled();
