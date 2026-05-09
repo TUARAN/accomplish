@@ -272,13 +272,20 @@ describe('SettingsDialog Integration', () => {
 
       render(<SettingsDialog {...defaultProps} />);
 
-      // Wait for dialog to load with anthropic as active
+      // Wait for dialog to load
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        // Verify anthropic card has green background (is active)
-        const anthropicCard = screen.getByTestId('provider-card-anthropic');
-        expect(anthropicCard.className).toContain('bg-provider-bg-active');
       });
+
+      // Anthropic now sits in the expanded section (the first row was reordered
+      // to lead with local-inference providers — Ollama / LM Studio / HuggingFace
+      // Local). Click "Show All" to reveal anthropic before asserting its
+      // active-state styling. Use findByTestId — Framer Motion's expand
+      // animation mounts the second row asynchronously.
+      fireEvent.click(screen.getByTestId('show-all-toggle'));
+
+      const anthropicCard = await screen.findByTestId('provider-card-anthropic');
+      expect(anthropicCard.className).toContain('bg-provider-bg-active');
 
       // Verify the initial state: anthropic is active
       // This confirms the test setup is correct

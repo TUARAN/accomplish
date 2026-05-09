@@ -6,6 +6,52 @@
 
 import fs from 'fs';
 
+/**
+ * Translate the cryptic transformers.js / fetch failures the user sees when
+ * `huggingface.co` is unreachable (GFW, broken proxy, no Wi-Fi, mirror down)
+ * into a single actionable message. The raw symptom is usually
+ * `Cannot read properties of undefined (reading 'tokenizer_class')` because
+ * transformers.js does not null-check the parsed config before reading fields
+ * off it.
+ */
+function describeDownloadError(rawMessage: string): string {
+  const tokenizerSymptom = /tokenizer_class|tokenizer_config|model\.onnx/i.test(rawMessage);
+  const networkSymptom = /fetch failed|ENOTFOUND|ECONNRESET|ETIMEDOUT|EAI_AGAIN|getaddrinfo/i.test(
+    rawMessage,
+  );
+  const fileMissingSymptom = /Could not locate file|404|Unable to fetch file metadata/i.test(
+    rawMessage,
+  );
+  if (tokenizerSymptom || networkSymptom || fileMissingSymptom) {
+    const endpoint = process.env.HF_ENDPOINT?.trim() || 'https://huggingface.co';
+    return (
+      `Could not download model from ${endpoint}. ` +
+      `Check your network/proxy and that the host is reachable. ` +
+      `In regions where huggingface.co is blocked, set HF_ENDPOINT (e.g. https://hf-mirror.com) before launching the app. ` +
+      `(Underlying error: ${rawMessage})`
+    );
+  }
+  return rawMessage;
+}
+
+/**
+ * Apply user-configurable HF endpoint + cache settings to the transformers.js
+ * `env` object before any from_pretrained call. `env.remoteHost` is the upstream
+ * the library hits to download model files; defaults to https://huggingface.co.
+ * `HF_ENDPOINT` is the same env var the official `huggingface_hub` Python client
+ * honours, so users coming from the Python side already know the convention.
+ */
+function configureTransformersEnv(env: Record<string, unknown>, cacheDir: string): void {
+  if (cacheDir) {
+    env.cacheDir = cacheDir;
+  }
+  env.allowRemoteModels = true;
+  const endpoint = process.env.HF_ENDPOINT?.trim();
+  if (endpoint) {
+    env.remoteHost = endpoint;
+  }
+}
+
 export interface DownloadProgress {
   modelId: string;
   status: 'downloading' | 'complete' | 'error';
@@ -44,11 +90,7 @@ export async function downloadModel(
     // Dynamically import Transformers.js (it's ESM-only)
     const { env, AutoTokenizer, AutoModelForCausalLM } = await import('@huggingface/transformers');
 
-    // Configure cache directory for downloads (env.cacheDir controls where Transformers.js writes)
-    if (cacheDir) {
-      env.cacheDir = cacheDir;
-    }
-    env.allowRemoteModels = true;
+    configureTransformersEnv(env as unknown as Record<string, unknown>, cacheDir);
 
     // Download tokenizer + model via Transformers.js auto-download
     onProgress?.({ modelId, status: 'downloading', progress: 10 });
@@ -73,7 +115,8 @@ export async function downloadModel(
 
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown download error';
+    const raw = error instanceof Error ? error.message : 'Unknown download error';
+    const message = describeDownloadError(raw);
     onProgress?.({ modelId, status: 'error', progress: 0, error: message });
     return { success: false, error: message };
   } finally {

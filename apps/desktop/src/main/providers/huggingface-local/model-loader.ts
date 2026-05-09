@@ -53,6 +53,14 @@ export async function loadModel(modelId: string): Promise<void> {
       const cacheDir = path.join(app.getPath('userData'), 'hf-models');
       env.localModelPath = cacheDir;
       env.allowRemoteModels = false;
+      // Respect HF_ENDPOINT for any incidental network access (e.g. checking
+      // for newer revisions). The downloader sets this too — duplicating here
+      // keeps the loader honest if the user only set it after the first launch.
+      const hfEndpoint = process.env.HF_ENDPOINT?.trim();
+      if (hfEndpoint) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (env as any).remoteHost = hfEndpoint;
+      }
 
       // Stage new model and tokenizer
       const tokenizer = await AutoTokenizer.from_pretrained(modelId);

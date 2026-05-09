@@ -6,8 +6,15 @@ import { PROVIDER_META } from '@accomplish_ai/agent-core/common';
 import { ProviderCard } from './ProviderCard';
 import { getAccomplish } from '@/lib/accomplish';
 
-// Provider order matching Figma design (4 columns per row)
+// Provider order: local-inference providers (Ollama, LM Studio, HuggingFace
+// Local) lead the list so users who want a fully on-device setup see them
+// without expanding "show all". The first row is 4 slots; the 4th slot keeps
+// accomplish-ai because the OSS free-mode build surfaces it as the easy-mode
+// default for users who do not want to bring their own provider.
 const PROVIDER_ORDER: ProviderId[] = [
+  'ollama',
+  'lmstudio',
+  'huggingface-local',
   'accomplish-ai',
   'openai',
   'anthropic',
@@ -18,9 +25,6 @@ const PROVIDER_ORDER: ProviderId[] = [
   'azure-foundry',
   'deepseek',
   'zai',
-  'ollama',
-  'lmstudio',
-  'huggingface-local',
   'xai',
   'openrouter',
   'litellm',
