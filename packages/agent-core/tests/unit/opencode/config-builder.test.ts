@@ -5,6 +5,7 @@ import { buildProviderConfigs } from '../../../src/opencode/config-builder.js';
 vi.mock('../../../src/storage/repositories/index.js', () => ({
   getOllamaConfig: () => null,
   getLMStudioConfig: () => null,
+  getHuggingFaceLocalConfig: () => null,
   getProviderSettings: () => ({
     connectedProviders: {},
   }),
@@ -125,7 +126,7 @@ describe('buildProviderConfigs', () => {
     });
   });
 
-  describe('Local providers (Ollama, LM Studio)', () => {
+  describe('Local providers (Ollama, LM Studio, HuggingFace Local)', () => {
     // Regression: when only Ollama/LM Studio is configured, the generated
     // OpenCode config used to omit `model` / `small_model`, which made
     // OpenCode fall back to its built-in Anthropic default and break with an
@@ -186,6 +187,45 @@ describe('buildProviderConfigs', () => {
       const lmstudioConfig = result.providerConfigs.find((p) => p.id === 'lmstudio');
       expect(lmstudioConfig?.options?.baseURL).toBe('http://localhost:1234/v1');
       expect(result.enabledProviders).toContain('lmstudio');
+    });
+
+    it('registers HuggingFace Local and points the modelOverride at the selected model', async () => {
+      const result = await buildProviderConfigs({
+        getApiKey: () => undefined,
+        providerSettings: {
+          connectedProviders: {
+            'huggingface-local': {
+              providerId: 'huggingface-local',
+              connectionStatus: 'connected',
+              selectedModelId: 'huggingface-local/onnx-community/Qwen2.5-0.5B-Instruct',
+              credentials: {
+                type: 'huggingface-local',
+                modelId: 'onnx-community/Qwen2.5-0.5B-Instruct',
+              },
+              availableModels: [
+                {
+                  id: 'huggingface-local/onnx-community/Qwen2.5-0.5B-Instruct',
+                  name: 'Qwen2.5 0.5B Instruct',
+                },
+              ],
+            },
+          },
+        } as never,
+      });
+
+      expect(result.modelOverride).toEqual({
+        model: 'huggingface-local/onnx-community/Qwen2.5-0.5B-Instruct',
+        smallModel: 'huggingface-local/onnx-community/Qwen2.5-0.5B-Instruct',
+      });
+      const hfConfig = result.providerConfigs.find((p) => p.id === 'huggingface-local');
+      expect(hfConfig).toBeDefined();
+      expect(hfConfig?.npm).toBe('@ai-sdk/openai-compatible');
+      expect(hfConfig?.options?.apiKey).toBe('accomplish-huggingface-local');
+      expect(hfConfig?.models?.['onnx-community/Qwen2.5-0.5B-Instruct']).toEqual({
+        name: 'onnx-community/Qwen2.5-0.5B-Instruct',
+        tools: false,
+      });
+      expect(result.enabledProviders).toContain('huggingface-local');
     });
   });
 });

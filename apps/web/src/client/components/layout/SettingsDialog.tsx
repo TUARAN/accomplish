@@ -169,6 +169,11 @@ export function SettingsDialog({
                         exit="exit"
                         transition={settingsTransitions.enter}
                       >
+                        {s.modelChangeError && (
+                          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                            {s.modelChangeError}
+                          </div>
+                        )}
                         <ProviderSettingsPanel
                           key={s.selectedProvider}
                           providerId={s.selectedProvider}

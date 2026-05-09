@@ -7,6 +7,7 @@ import type {
   ProviderId,
   ConnectedProvider,
 } from '@accomplish_ai/agent-core/common';
+import { getHuggingFaceLocalErrorMessage } from '@/components/settings/providers/huggingface-errors';
 
 export function useProviderSettings() {
   const [settings, setSettings] = useState<ProviderSettings | null>(null);
@@ -70,16 +71,98 @@ export function useProviderSettings() {
 
   const updateModel = useCallback(async (providerId: ProviderId, modelId: string | null) => {
     const accomplish = getAccomplish();
-    await accomplish.updateProviderModel(providerId, modelId);
+    const currentSettings = (await accomplish.getProviderSettings()) as ProviderSettings;
+    const currentProvider = currentSettings.connectedProviders[providerId];
+
+    const persistedModelId =
+      providerId === 'huggingface-local' && modelId
+        ? modelId.replace(/^huggingface-local\//, '')
+        : modelId;
+
+    if (providerId === 'huggingface-local' && persistedModelId) {
+      const rawModelId = persistedModelId;
+      const downloadResult = await accomplish.downloadHuggingFaceModel(rawModelId);
+      if (!downloadResult.success) {
+        throw new Error(
+          getHuggingFaceLocalErrorMessage(
+            downloadResult.error,
+            'Failed to download HuggingFace Local model',
+          ),
+        );
+      }
+      const serverResult = await accomplish.startHuggingFaceServer(rawModelId);
+      if (!serverResult.success) {
+        throw new Error(
+          getHuggingFaceLocalErrorMessage(
+            serverResult.error,
+            'Failed to start HuggingFace Local server',
+          ),
+        );
+      }
+      const existingConfig = await accomplish.getHuggingFaceLocalConfig().catch(() => null);
+      await accomplish.setHuggingFaceLocalConfig({
+        selectedModelId: rawModelId,
+        serverPort: serverResult.port ?? existingConfig?.serverPort ?? null,
+        enabled: true,
+        quantization: existingConfig?.quantization ?? 'q4',
+        devicePreference: existingConfig?.devicePreference ?? 'auto',
+      });
+
+      if (currentProvider?.credentials.type === 'huggingface-local') {
+        await accomplish.setConnectedProvider(providerId, {
+          ...currentProvider,
+          selectedModelId: rawModelId,
+          credentials: {
+            ...currentProvider.credentials,
+            modelId: rawModelId,
+          },
+          availableModels: [
+            {
+              id: rawModelId,
+              name: rawModelId.split('/').pop() ?? rawModelId,
+            },
+          ],
+        });
+      }
+    }
+
+    await accomplish.updateProviderModel(providerId, persistedModelId);
     setSettings((prev) => {
       if (!prev) return null;
       const provider = prev.connectedProviders[providerId];
       if (!provider) return prev;
+      if (
+        providerId === 'huggingface-local' &&
+        persistedModelId &&
+        provider.credentials.type === 'huggingface-local'
+      ) {
+        const rawModelId = persistedModelId;
+        return {
+          ...prev,
+          connectedProviders: {
+            ...prev.connectedProviders,
+            [providerId]: {
+              ...provider,
+              selectedModelId: rawModelId,
+              credentials: {
+                ...provider.credentials,
+                modelId: rawModelId,
+              },
+              availableModels: [
+                {
+                  id: rawModelId,
+                  name: rawModelId.split('/').pop() ?? rawModelId,
+                },
+              ],
+            },
+          },
+        };
+      }
       return {
         ...prev,
         connectedProviders: {
           ...prev.connectedProviders,
-          [providerId]: { ...provider, selectedModelId: modelId },
+          [providerId]: { ...provider, selectedModelId: persistedModelId },
         },
       };
     });

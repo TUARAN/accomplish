@@ -8,6 +8,7 @@ import {
   DEV_BROWSER_PORT,
   logger,
   type BrowserServerConfig,
+  type TaskConfig,
   type TaskCallbacks,
   type StorageAPI,
 } from '@accomplish_ai/agent-core';
@@ -23,8 +24,12 @@ export function getBrowserServerConfig(opts: TaskConfigBuilderOptions): BrowserS
 
 export function createOnBeforeTaskStart(
   opts: TaskConfigBuilderOptions,
-): (callbacks: TaskCallbacks, isFirst: boolean) => Promise<void> {
-  return async (callbacks, isFirst) => {
+): (callbacks: TaskCallbacks, isFirst: boolean, config: TaskConfig) => Promise<void> {
+  return async (callbacks, isFirst, config) => {
+    if (!shouldPrepareBrowser(config.prompt)) {
+      return;
+    }
+
     const browserConfig = getBrowserServerConfig(opts);
     if (!browserConfig.mcpToolsPath) {
       return;
@@ -38,6 +43,35 @@ export function createOnBeforeTaskStart(
     }
     await ensureDevBrowserServer(browserConfig, callbacks.onProgress);
   };
+}
+
+function shouldPrepareBrowser(prompt: string): boolean {
+  const normalized = prompt.toLowerCase();
+  return [
+    'http://',
+    'https://',
+    'www.',
+    'browser',
+    'chrome',
+    'website',
+    'webpage',
+    'open ',
+    'click',
+    'search',
+    'google',
+    '网页',
+    '网站',
+    '浏览器',
+    '打开',
+    '访问',
+    '点击',
+    '搜索',
+    '百度',
+    '谷歌',
+    '页面',
+    '登录',
+    '表单',
+  ].some((keyword) => normalized.includes(keyword));
 }
 
 export function runTaskSummaryGeneration(

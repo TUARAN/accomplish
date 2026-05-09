@@ -25,6 +25,7 @@ export function useSettingsDialog({
   const [gridExpanded, setGridExpanded] = useState(false);
   const [closeWarning, setCloseWarning] = useState(false);
   const [showModelError, setShowModelError] = useState(false);
+  const [modelChangeError, setModelChangeError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
   const [appVersion, setAppVersion] = useState<string>('');
   const [skillsRefreshTrigger, setSkillsRefreshTrigger] = useState(0);
@@ -59,6 +60,7 @@ export function useSettingsDialog({
       setGridExpanded(false);
       setCloseWarning(false);
       setShowModelError(false);
+      setModelChangeError(null);
     } else {
       setActiveTab(initialTab);
     }
@@ -96,6 +98,7 @@ export function useSettingsDialog({
       setSelectedProvider(providerId);
       setCloseWarning(false);
       setShowModelError(false);
+      setModelChangeError(null);
       const provider = settings?.connectedProviders?.[providerId];
       if (provider && isProviderReady(provider)) {
         await setActiveProvider(providerId);
@@ -145,15 +148,22 @@ export function useSettingsDialog({
       if (!selectedProvider) {
         return;
       }
-      await updateModel(selectedProvider, modelId);
-      const provider = settings?.connectedProviders[selectedProvider];
-      if (provider && isProviderReady({ ...provider, selectedModelId: modelId })) {
-        if (!settings?.activeProviderId || settings.activeProviderId !== selectedProvider) {
-          await setActiveProvider(selectedProvider);
+      setModelChangeError(null);
+      try {
+        await updateModel(selectedProvider, modelId);
+        const provider = settings?.connectedProviders[selectedProvider];
+        if (provider && isProviderReady({ ...provider, selectedModelId: modelId })) {
+          if (!settings?.activeProviderId || settings.activeProviderId !== selectedProvider) {
+            await setActiveProvider(selectedProvider);
+          }
         }
+        setShowModelError(false);
+        onApiKeySaved?.();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update model';
+        setShowModelError(true);
+        setModelChangeError(message);
       }
-      setShowModelError(false);
-      onApiKeySaved?.();
     },
     [selectedProvider, updateModel, settings, setActiveProvider, onApiKeySaved],
   );
@@ -220,6 +230,7 @@ export function useSettingsDialog({
     setGridExpanded,
     closeWarning,
     showModelError,
+    modelChangeError,
     activeTab,
     setActiveTab,
     appVersion,

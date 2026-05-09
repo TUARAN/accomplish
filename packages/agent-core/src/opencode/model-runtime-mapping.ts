@@ -124,6 +124,13 @@ export function normalizeSelectedModelForSdk(
     };
   }
 
+  if (selectedModel.provider === 'huggingface-local') {
+    return {
+      providerID: PROVIDER_ID_TO_OPENCODE['huggingface-local'],
+      modelID: stripModelPrefix(selectedModel.model, ['huggingface-local/']),
+    };
+  }
+
   // Note: commercial 1a320029 branches for 'local-model' and 'auto-model-routing'
   // providers are OSS-divergent — those providers do not exist in OSS's
   // `ProviderId` union. If/when OSS adds them, reintroduce the branches from

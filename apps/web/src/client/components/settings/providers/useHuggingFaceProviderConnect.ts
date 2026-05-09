@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAccomplish } from '@/lib/accomplish';
 import type { ConnectedProvider } from '@accomplish_ai/agent-core/common';
 import type { HuggingFaceLocalCredentials } from '@accomplish_ai/agent-core/common';
+import { getHuggingFaceLocalErrorMessage } from './huggingface-errors';
 
 export interface SuggestedModel {
   id: string;
@@ -95,7 +96,7 @@ export function useHuggingFaceProviderConnect({
 
       const downloadResult = await accomplish.downloadHuggingFaceModel(selectedModelId);
       if (!downloadResult.success) {
-        setError(downloadResult.error ?? 'Download failed');
+        setError(getHuggingFaceLocalErrorMessage(downloadResult.error, 'Download failed'));
         setIsDownloading(false);
         setConnecting(false);
         return;
@@ -105,10 +106,21 @@ export function useHuggingFaceProviderConnect({
 
       const serverResult = await accomplish.startHuggingFaceServer(selectedModelId);
       if (!serverResult.success) {
-        setError(serverResult.error ?? 'Failed to start inference server');
+        setError(
+          getHuggingFaceLocalErrorMessage(serverResult.error, 'Failed to start inference server'),
+        );
         setConnecting(false);
         return;
       }
+
+      const existingConfig = await accomplish.getHuggingFaceLocalConfig().catch(() => null);
+      await accomplish.setHuggingFaceLocalConfig({
+        selectedModelId,
+        serverPort: serverResult.port ?? existingConfig?.serverPort ?? null,
+        enabled: true,
+        quantization: existingConfig?.quantization ?? 'q4',
+        devicePreference: existingConfig?.devicePreference ?? 'auto',
+      });
 
       const modelDisplayId = `huggingface-local/${selectedModelId}`;
 
@@ -131,7 +143,7 @@ export function useHuggingFaceProviderConnect({
 
       onConnect(provider);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection failed');
+      setError(getHuggingFaceLocalErrorMessage(err, 'Connection failed'));
       setIsDownloading(false);
     } finally {
       setConnecting(false);

@@ -358,12 +358,16 @@ interface AccomplishAPI {
     selectedModelId: string | null;
     serverPort: number | null;
     enabled: boolean;
+    quantization: 'q4' | 'fp32' | null;
+    devicePreference: 'auto' | 'cpu' | 'cuda' | 'webgpu' | null;
   } | null>;
   setHuggingFaceLocalConfig(
     config: {
       selectedModelId: string | null;
       serverPort: number | null;
       enabled: boolean;
+      quantization: 'q4' | 'fp32' | null;
+      devicePreference: 'auto' | 'cpu' | 'cuda' | 'webgpu' | null;
     } | null,
   ): Promise<void>;
   listHuggingFaceModels(): Promise<{

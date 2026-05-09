@@ -1,5 +1,9 @@
-/** Local/self-hosted provider config builders: Ollama, LM Studio. */
-import { getOllamaConfig, getLMStudioConfig } from '../storage/repositories/index.js';
+/** Local/self-hosted provider config builders: Ollama, LM Studio, HuggingFace Local. */
+import {
+  getOllamaConfig,
+  getLMStudioConfig,
+  getHuggingFaceLocalConfig,
+} from '../storage/repositories/index.js';
 import { createConsoleLogger } from '../utils/logging.js';
 import type { ProviderModelConfig } from './config-generator.js';
 import type { ProviderBuildContext, ProviderBuildResult } from './config-provider-context.js';
@@ -152,5 +156,83 @@ export async function buildLMStudioConfig(ctx: ProviderBuildContext): Promise<Pr
       modelOverride: { model: legacyOverrideModel, smallModel: legacyOverrideModel },
     };
   }
+  return { configs: [], enableToAdd: [] };
+}
+
+export async function buildHuggingFaceLocalConfig(
+  ctx: ProviderBuildContext,
+): Promise<ProviderBuildResult> {
+  const { providerSettings, activeModel } = ctx;
+  const legacyConfig = getHuggingFaceLocalConfig();
+  const baseURL = legacyConfig?.serverPort
+    ? `http://127.0.0.1:${legacyConfig.serverPort}/v1`
+    : undefined;
+  const hfProvider = providerSettings.connectedProviders['huggingface-local'];
+  if (
+    hfProvider?.connectionStatus === 'connected' &&
+    hfProvider.credentials.type === 'huggingface-local' &&
+    hfProvider.selectedModelId
+  ) {
+    const modelId = hfProvider.selectedModelId.replace(/^huggingface-local\//, '');
+    log.info(
+      `[OpenCode Config Builder] HuggingFace Local configured: ${modelId}${
+        baseURL ? ` baseURL: ${baseURL}` : ''
+      }`,
+    );
+    const overrideModel =
+      activeModel?.provider === 'huggingface-local' && activeModel.model
+        ? activeModel.model
+        : `huggingface-local/${modelId}`;
+    return {
+      configs: [
+        {
+          id: 'huggingface-local',
+          npm: '@ai-sdk/openai-compatible',
+          name: 'HuggingFace Local',
+          models: {
+            [modelId]: { name: modelId, tools: false },
+          },
+          options: {
+            ...(baseURL ? { baseURL } : {}),
+            apiKey: 'accomplish-huggingface-local',
+          },
+        },
+      ],
+      enableToAdd: ['huggingface-local'],
+      modelOverride: { model: overrideModel, smallModel: overrideModel },
+    };
+  }
+
+  if (legacyConfig?.enabled && legacyConfig.selectedModelId) {
+    const modelId = legacyConfig.selectedModelId.replace(/^huggingface-local\//, '');
+    log.info(
+      `[OpenCode Config Builder] HuggingFace Local (legacy) configured: ${modelId}${
+        baseURL ? ` baseURL: ${baseURL}` : ''
+      }`,
+    );
+    const legacyOverrideModel =
+      activeModel?.provider === 'huggingface-local' && activeModel.model
+        ? activeModel.model
+        : `huggingface-local/${modelId}`;
+    return {
+      configs: [
+        {
+          id: 'huggingface-local',
+          npm: '@ai-sdk/openai-compatible',
+          name: 'HuggingFace Local',
+          models: {
+            [modelId]: { name: modelId, tools: false },
+          },
+          options: {
+            ...(baseURL ? { baseURL } : {}),
+            apiKey: 'accomplish-huggingface-local',
+          },
+        },
+      ],
+      enableToAdd: ['huggingface-local'],
+      modelOverride: { model: legacyOverrideModel, smallModel: legacyOverrideModel },
+    };
+  }
+
   return { configs: [], enableToAdd: [] };
 }

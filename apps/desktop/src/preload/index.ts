@@ -727,12 +727,16 @@ const accomplishAPI = {
     selectedModelId: string | null;
     serverPort: number | null;
     enabled: boolean;
+    quantization: 'q4' | 'fp32' | null;
+    devicePreference: 'auto' | 'cpu' | 'cuda' | 'webgpu' | null;
   } | null> => ipcRenderer.invoke('huggingface-local:get-config'),
   setHuggingFaceLocalConfig: (
     config: {
       selectedModelId: string | null;
       serverPort: number | null;
       enabled: boolean;
+      quantization: 'q4' | 'fp32' | null;
+      devicePreference: 'auto' | 'cpu' | 'cuda' | 'webgpu' | null;
     } | null,
   ): Promise<void> => ipcRenderer.invoke('huggingface-local:set-config', config),
   testHuggingFaceConnection: (): Promise<{ success: boolean; error?: string }> =>

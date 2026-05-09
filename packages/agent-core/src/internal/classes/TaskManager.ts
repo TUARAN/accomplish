@@ -71,7 +71,11 @@ export interface TaskManagerOptions {
   defaultWorkingDirectory: string;
   maxConcurrentTasks?: number;
   isCliAvailable: () => Promise<boolean>;
-  onBeforeTaskStart?: (callbacks: TaskCallbacks, isFirstTask: boolean) => Promise<void>;
+  onBeforeTaskStart?: (
+    callbacks: TaskCallbacks,
+    isFirstTask: boolean,
+    config: TaskConfig,
+  ) => Promise<void>;
 }
 
 interface ManagedTask {
@@ -330,7 +334,7 @@ export class TaskManager {
         callbacks.onProgress({ stage: 'starting', message: 'Starting task...', isFirstTask });
 
         if (this.options.onBeforeTaskStart) {
-          await this.options.onBeforeTaskStart(callbacks, isFirstTask);
+          await this.options.onBeforeTaskStart(callbacks, isFirstTask, config);
         }
 
         if (this.isFirstTask) {

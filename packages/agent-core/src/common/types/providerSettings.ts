@@ -424,8 +424,7 @@ export const PROVIDER_ID_TO_OPENCODE: Record<ProviderId, string> = {
   minimax: 'minimax',
   lmstudio: 'lmstudio',
   vertex: 'vertex',
-  // HuggingFace Local exposes an OpenAI-compatible API; opencode connects via OPENAI_API_BASE env var
-  'huggingface-local': 'openai',
+  'huggingface-local': 'huggingface-local',
   nebius: 'nebius',
   together: 'together',
   fireworks: 'fireworks',

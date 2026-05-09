@@ -51,7 +51,7 @@ export async function loadModel(modelId: string): Promise<void> {
         await import('@huggingface/transformers');
 
       const cacheDir = path.join(app.getPath('userData'), 'hf-models');
-      env.localModelPath = cacheDir;
+      env.cacheDir = cacheDir;
       env.allowRemoteModels = false;
       // Respect HF_ENDPOINT for any incidental network access (e.g. checking
       // for newer revisions). The downloader sets this too — duplicating here

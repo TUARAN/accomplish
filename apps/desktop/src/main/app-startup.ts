@@ -317,13 +317,15 @@ export async function startApp(
       // HuggingFace auto-start. Pre-M5 this read `storage.getHuggingFaceLocalConfig()`;
       // the `SettingsSnapshot.huggingFaceLocalConfig` field carries the
       // same blob post-M5.
+      const hfProvider = snap.providers.connectedProviders['huggingface-local'];
       const hfConfig = snap.huggingFaceLocalConfig;
-      if (hfConfig?.enabled && hfConfig.selectedModelId) {
-        logMain(
-          'INFO',
-          `[Main] Auto-starting HuggingFace server for model: ${hfConfig.selectedModelId}`,
-        );
-        startHuggingFaceServer(hfConfig.selectedModelId)
+      const hfModelId =
+        hfProvider?.connectionStatus === 'connected' && hfProvider.selectedModelId
+          ? hfProvider.selectedModelId.replace(/^huggingface-local\//, '')
+          : hfConfig?.selectedModelId;
+      if (hfConfig?.enabled && hfModelId) {
+        logMain('INFO', `[Main] Auto-starting HuggingFace server for model: ${hfModelId}`);
+        startHuggingFaceServer(hfModelId)
           .then((result) => {
             if (!result.success) {
               logMain('ERROR', '[Main] Failed to auto-start HuggingFace local server', {

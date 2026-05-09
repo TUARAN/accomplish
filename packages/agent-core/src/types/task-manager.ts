@@ -194,7 +194,11 @@ export interface TaskManagerOptions {
   /** Function to check if CLI is available */
   isCliAvailable: () => Promise<boolean>;
   /** Called before a task starts */
-  onBeforeTaskStart?: (callbacks: TaskCallbacks, isFirstTask: boolean) => Promise<void>;
+  onBeforeTaskStart?: (
+    callbacks: TaskCallbacks,
+    isFirstTask: boolean,
+    config: TaskConfig,
+  ) => Promise<void>;
 }
 
 /** Public API for task management operations */
